@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const phone = "mx-auto w-full max-w-[420px] min-h-screen bg-black text-white relative";
+const phone = "mx-auto w-full max-w-[420px] h-screen bg-black text-white flex flex-col";
 const POT = "#c084fc";
 const POT_DIM = "rgba(192,132,252,0.12)";
 const INITIAL_WALLET = 3000;
@@ -44,7 +44,6 @@ const STATIC_HOLDINGS = [
 interface Pot {
   id: string;
   name: string;
-  emoji: string;
   targetAmount: number;
   currentAmount: number;
   createdAt: string;
@@ -61,11 +60,6 @@ function pctOf(current: number, target: number) {
 }
 
 // ─── Emoji options ────────────────────────────────────────────────────────────
-const EMOJIS = [
-  "🕌", "✈️", "🏖️", "📚", "🎓", "💻", "📱", "🏠", "🚗", "⌚",
-  "💎", "🎯", "💰", "🏋️", "💊", "🌍", "🎵", "🎮", "👶", "🐾",
-  "🌟", "🚀", "🏆", "🎁", "🛍️", "🏗️", "⚽", "🎨", "🌱", "❤️",
-];
 
 // ─── Bottom nav ───────────────────────────────────────────────────────────────
 function BottomNav({ current, onNavigate }: { current: string; onNavigate: (s: string) => void }) {
@@ -77,7 +71,7 @@ function BottomNav({ current, onNavigate }: { current: string; onNavigate: (s: s
     { id: "all", label: "All", icon: MoreHorizontal },
   ];
   return (
-    <div className="sticky bottom-0 border-t border-white/10 bg-black/95 backdrop-blur px-3 py-3">
+    <div className="border-t border-white/10 bg-black/95 backdrop-blur px-3 py-3">
       <div className="grid grid-cols-5 gap-1">
         {items.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => onNavigate(id)} className="flex flex-col items-center gap-1 py-1 text-xs">
@@ -133,7 +127,7 @@ function PageShell({
 }) {
   return (
     <div className={phone} style={{ background: gradient ?? "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
-      <div className="flex items-center justify-between px-5 pt-6 pb-2">
+      <div className="shrink-0 flex items-center justify-between px-5 pt-6 pb-2">
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack} className="rounded-full bg-white/10 p-2">
@@ -156,20 +150,23 @@ function PageShell({
           <div className="h-10 w-10 rounded-full bg-[radial-gradient(circle_at_35%_35%,#d4ff8e,#457a33)] ring-2 ring-white/10" />
         )}
       </div>
-      <div className="px-5 pb-28 overflow-auto">{children}</div>
-      <BottomNav current={navCurrent} onNavigate={onNavigate ?? (() => {})} />
+      <div className="flex-1 overflow-y-auto px-5 pb-6">{children}</div>
+      <div className="shrink-0">
+        <BottomNav current={navCurrent} onNavigate={onNavigate ?? (() => {})} />
+      </div>
     </div>
   );
 }
 
 // ─── MoneyHub ─────────────────────────────────────────────────────────────────
 function MoneyHub({
-  walletTotal, spendable, potsTotal, potsCount, onNavigate,
+  walletTotal, spendable, potsTotal, potsCount, potsGoalTotal, onNavigate,
 }: {
   walletTotal: number;
   spendable: number;
   potsTotal: number;
   potsCount: number;
+  potsGoalTotal: number;
   onNavigate: (s: string) => void;
 }) {
   const [tab, setTab] = useState<"pay" | "credit" | "wealth">("pay");
@@ -256,7 +253,7 @@ function MoneyHub({
                 </div>
                 {potsCount > 0 && (
                   <div className="mt-2">
-                    <ProgressBar pct={Math.min(100, (potsTotal / walletTotal) * 100)} />
+                    <ProgressBar pct={potsGoalTotal > 0 ? Math.min(100, (potsTotal / potsGoalTotal) * 100) : 0} />
                   </div>
                 )}
               </div>
@@ -434,14 +431,10 @@ function PotsHub({
             of {formatAed(totalGoal)} goal · {overallPct.toFixed(0)}% there
           </div>
           <ProgressBar pct={overallPct} />
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <div className="rounded-xl bg-white/8 px-3 py-2">
+          <div className="mt-3">
+            <div className="rounded-xl bg-white/8 px-3 py-2 inline-block">
               <div className="text-xs text-white/45">Pots</div>
               <div className="text-sm font-semibold">{pots.length} / {MAX_POTS}</div>
-            </div>
-            <div className="rounded-xl px-3 py-2" style={{ background: POT_DIM }}>
-              <div className="text-xs" style={{ color: `${POT}80` }}>Wallet spendable</div>
-              <div className="text-sm font-semibold" style={{ color: POT }}>{formatAed(spendable)}</div>
             </div>
           </div>
         </motion.div>
@@ -463,9 +456,6 @@ function PotsHub({
                 className="w-full text-left rounded-[22px] bg-[#0f1117] border border-white/8 p-4"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xl" style={{ background: POT_DIM }}>
-                    {pot.emoji}
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm truncate">{pot.name}</div>
                     <div className="text-xs text-white/40">{pct.toFixed(0)}% of goal</div>
@@ -513,15 +503,23 @@ function PotsHub({
   );
 }
 
-// ─── Create Pot — Step 1: Name & Emoji ───────────────────────────────────────
+// ─── Create Pot — Step 1: Name ───────────────────────────────────────────────
+const NAME_ALLOWED = /^[a-zA-Z0-9\u0600-\u06FF\s]*$/;
+const NAME_MAX = 32;
+
 function CreatePot1({
   onBack, onNext,
 }: {
   onBack: () => void;
-  onNext: (name: string, emoji: string) => void;
+  onNext: (name: string) => void;
 }) {
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("🎯");
+  const hasSpecial = name.length > 0 && !NAME_ALLOWED.test(name);
+  const isValid = name.trim().length > 0 && !hasSpecial;
+
+  function handleChange(v: string) {
+    if (v.length <= NAME_MAX) setName(v);
+  }
 
   return (
     <PageShell
@@ -545,52 +543,33 @@ function CreatePot1({
           <div className="text-sm text-white/45">Give it a name that matches your goal.</div>
         </div>
 
-        {/* Preview */}
-        <div className="flex items-center gap-3 rounded-[20px] bg-[#0f1117] border border-white/8 p-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full text-2xl" style={{ background: POT_DIM }}>
-            {emoji}
+        <div
+          className="rounded-[20px] bg-[#0f1117] border px-4 py-3 transition"
+          style={{ borderColor: hasSpecial ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+        >
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-xs text-white/45">Pot name</div>
+            <div className="text-xs" style={{ color: name.length >= NAME_MAX ? "rgb(248,113,113)" : "rgba(255,255,255,0.3)" }}>
+              {name.length}/{NAME_MAX}
+            </div>
           </div>
-          <div className="text-base font-semibold text-white/70">{name || "Your pot name…"}</div>
-        </div>
-
-        {/* Name input */}
-        <div className="rounded-[20px] bg-[#0f1117] border border-white/8 px-4 py-3">
-          <div className="text-xs text-white/45 mb-1">Pot name</div>
           <input
             className="w-full bg-transparent text-white text-base outline-none placeholder-white/25"
             placeholder="e.g. Hajj 2026, MacBook, Emergency"
-            maxLength={32}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleChange(e.target.value)}
             autoFocus
           />
-        </div>
-
-        {/* Emoji picker */}
-        <div>
-          <div className="text-xs text-white/45 mb-3 uppercase tracking-wider">Choose an icon</div>
-          <div className="grid grid-cols-6 gap-2">
-            {EMOJIS.map((e) => (
-              <button
-                key={e}
-                onClick={() => setEmoji(e)}
-                className="flex h-11 items-center justify-center rounded-[14px] text-xl transition"
-                style={{
-                  background: emoji === e ? POT_DIM : "rgba(255,255,255,0.05)",
-                  border: emoji === e ? `1.5px solid ${POT}55` : "1.5px solid transparent",
-                }}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
+          {hasSpecial && (
+            <div className="text-xs text-red-400 mt-2">Only letters, numbers, and spaces allowed</div>
+          )}
         </div>
 
         <button
-          onClick={() => name.trim() && onNext(name.trim(), emoji)}
-          disabled={!name.trim()}
-          className="rounded-full py-4 text-sm font-semibold text-black transition"
-          style={{ background: name.trim() ? POT : "rgba(255,255,255,0.1)", color: name.trim() ? "#000" : "rgba(255,255,255,0.3)" }}
+          onClick={() => isValid && onNext(name.trim())}
+          disabled={!isValid}
+          className="rounded-full py-4 text-sm font-semibold transition"
+          style={{ background: isValid ? POT : "rgba(255,255,255,0.1)", color: isValid ? "#000" : "rgba(255,255,255,0.3)" }}
         >
           Continue
         </button>
@@ -601,10 +580,9 @@ function CreatePot1({
 
 // ─── Create Pot — Step 2: Target Amount ──────────────────────────────────────
 function CreatePot2({
-  potName, potEmoji, onBack, onNext,
+  potName, onBack, onNext,
 }: {
   potName: string;
-  potEmoji: string;
   onBack: () => void;
   onNext: (target: number) => void;
 }) {
@@ -632,11 +610,7 @@ function CreatePot2({
         </div>
         <div className="text-xs text-white/40">Step 2 of 3</div>
 
-        {/* Pot preview pill */}
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{potEmoji}</span>
-          <span className="font-semibold">{potName}</span>
-        </div>
+        <div className="font-semibold">{potName}</div>
 
         <div>
           <div className="text-xl font-semibold mb-1">Set a savings goal</div>
@@ -694,10 +668,9 @@ function CreatePot2({
 
 // ─── Create Pot — Step 3: Initial Deposit ────────────────────────────────────
 function CreatePot3({
-  potName, potEmoji, targetAmount, spendable, onBack, onCreate,
+  potName, targetAmount, spendable, onBack, onCreate,
 }: {
   potName: string;
-  potEmoji: string;
   targetAmount: number;
   spendable: number;
   onBack: () => void;
@@ -731,7 +704,6 @@ function CreatePot3({
 
         {/* Pot preview */}
         <div className="flex items-center gap-2">
-          <span className="text-xl">{potEmoji}</span>
           <span className="font-semibold">{potName}</span>
           <span className="text-white/40">·</span>
           <span className="text-sm text-white/45">goal {formatAed(targetAmount)}</span>
@@ -771,27 +743,6 @@ function CreatePot3({
           )}
         </div>
 
-        {/* Quick percentages */}
-        <div className="flex gap-2">
-          {[25, 50, 75, 100].map((pct) => {
-            const v = Math.floor((spendable * pct) / 100 * 100) / 100;
-            return (
-              <button
-                key={pct}
-                onClick={() => setRaw(String(v))}
-                className="flex-1 rounded-full py-2 text-xs font-semibold"
-                style={{
-                  background: amount === v ? POT_DIM : "rgba(255,255,255,0.07)",
-                  color: amount === v ? POT : "rgba(255,255,255,0.55)",
-                  border: amount === v ? `1px solid ${POT}44` : "1px solid transparent",
-                }}
-              >
-                {pct}%
-              </button>
-            );
-          })}
-        </div>
-
         <div className="flex flex-col gap-3">
           <button
             onClick={() => isValid && onCreate(amount)}
@@ -815,16 +766,15 @@ function CreatePot3({
 
 // ─── Create Pot — Success ────────────────────────────────────────────────────
 function CreatePotSuccess({
-  potName, potEmoji, depositAmount, onDone,
+  potName, depositAmount, onDone,
 }: {
   potName: string;
-  potEmoji: string;
   depositAmount: number;
   onDone: () => void;
 }) {
   return (
     <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
-      <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center gap-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -837,10 +787,7 @@ function CreatePotSuccess({
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <div className="text-2xl font-bold mb-2">Pot created!</div>
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-2xl">{potEmoji}</span>
-            <span className="text-lg font-semibold">{potName}</span>
-          </div>
+          <div className="text-lg font-semibold mb-3">{potName}</div>
           {depositAmount > 0 ? (
             <div className="text-sm text-white/55">
               <span style={{ color: POT }} className="font-semibold">{formatAed(depositAmount)}</span> moved to your pot
@@ -867,13 +814,15 @@ function CreatePotSuccess({
 
 // ─── Pot Detail ───────────────────────────────────────────────────────────────
 function PotDetail({
-  pot, spendable, onBack, onAddMoney, onWithdraw, onDeleteConfirm,
+  pot, spendable, otherPotsExist, onBack, onAddMoney, onWithdraw, onTransfer, onDeleteConfirm,
 }: {
   pot: Pot;
   spendable: number;
+  otherPotsExist: boolean;
   onBack: () => void;
   onAddMoney: () => void;
   onWithdraw: () => void;
+  onTransfer: () => void;
   onDeleteConfirm: () => void;
 }) {
   const pct = pctOf(pot.currentAmount, pot.targetAmount);
@@ -894,7 +843,6 @@ function PotDetail({
           className="rounded-[28px] p-6 border border-white/8 text-center"
           style={{ background: "linear-gradient(135deg,rgba(30,10,60,0.95),rgba(10,5,20,0.9))" }}
         >
-          <div className="text-4xl mb-2">{pot.emoji}</div>
           <div className="text-xl font-semibold mb-4">{pot.name}</div>
           <div className="text-xs text-white/40 mb-1">Saved</div>
           <div className="text-4xl font-semibold tracking-tight mb-4">{formatAed(pot.currentAmount)}</div>
@@ -933,9 +881,9 @@ function PotDetail({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={onAddMoney}
-            disabled={spendable <= 0}
-            className="rounded-full py-4 text-sm font-semibold text-black"
-            style={{ background: spendable > 0 ? POT : "rgba(255,255,255,0.1)", color: spendable > 0 ? "#000" : "rgba(255,255,255,0.3)" }}
+            disabled={goalReached}
+            className="rounded-full py-4 text-sm font-semibold"
+            style={{ background: goalReached ? "rgba(255,255,255,0.1)" : POT, color: goalReached ? "rgba(255,255,255,0.3)" : "#000" }}
           >
             Add money
           </button>
@@ -952,10 +900,25 @@ function PotDetail({
           </button>
         </div>
 
+        {/* Transfer between pots */}
+        {otherPotsExist && (
+          <button
+            onClick={onTransfer}
+            disabled={goalReached}
+            className="rounded-full py-4 text-sm font-semibold border w-full"
+            style={{
+              borderColor: goalReached ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.12)",
+              color: goalReached ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
+            }}
+          >
+            Transfer from another pot
+          </button>
+        )}
+
         {/* Delete */}
         <button
           onClick={onDeleteConfirm}
-          className="flex items-center justify-center gap-2 rounded-full py-3 text-sm text-red-400/70 border border-red-500/15 mt-2"
+          className="flex items-center justify-center gap-2 rounded-full py-3 text-sm text-red-400/70 border border-red-500/15"
         >
           <Trash2 className="h-4 w-4" />
           Delete pot
@@ -967,29 +930,31 @@ function PotDetail({
 
 // ─── Add Money — amount entry ─────────────────────────────────────────────────
 function PotAddMoney({
-  pot, spendable, onBack, onNext,
+  pot, spendable, monthlyRemaining, onBack, onNext,
 }: {
   pot: Pot;
   spendable: number;
+  monthlyRemaining: number;
   onBack: () => void;
   onNext: (amount: number) => void;
 }) {
   const [raw, setRaw] = useState("");
   const amount = parseFloat(raw) || 0;
-  const canContinue = amount > 0;
+  const isOverMonthlyLimit = amount > monthlyRemaining;
+  const canContinue = amount > 0 && !isOverMonthlyLimit;
   const remaining = Math.max(0, pot.targetAmount - pot.currentAmount);
   const goalReached = remaining === 0;
 
   return (
     <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{pot.emoji}</span>
-          <span className="font-semibold">{pot.name}</span>
-        </div>
+        <div className="font-semibold">{pot.name}</div>
         <div className="text-xl font-semibold">Add money to pot</div>
 
-        <div className="rounded-[24px] bg-[#0f1117] border border-white/8 px-5 py-6 flex flex-col items-center gap-2">
+        <div
+          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2 transition"
+          style={{ borderColor: isOverMonthlyLimit ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+        >
           <div className="text-xs text-white/45 mb-1">Amount</div>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-semibold text-white/40">AED</span>
@@ -1003,6 +968,11 @@ function PotAddMoney({
               autoFocus
             />
           </div>
+          {isOverMonthlyLimit && (
+            <div className="text-xs text-red-400 mt-1">
+              Monthly limit reached — you can deposit up to {formatAed(Math.max(0, monthlyRemaining))} this month
+            </div>
+          )}
         </div>
 
         {/* Goal nudge */}
@@ -1094,10 +1064,7 @@ function PotPaymentMethod({
   return (
     <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{pot.emoji}</span>
-          <span className="font-semibold">{pot.name}</span>
-        </div>
+        <div className="font-semibold">{pot.name}</div>
 
         <div>
           <div className="text-xl font-semibold mb-1">How would you like to pay?</div>
@@ -1186,7 +1153,7 @@ function PotCardCvv({
           </div>
           <div>
             <div className="text-lg font-semibold">Visa •••• 4782</div>
-            <div className="text-sm text-white/45">Confirm {formatAed(amount)} into {pot.emoji} {pot.name}</div>
+            <div className="text-sm text-white/45">Confirm {formatAed(amount)} into {pot.name}</div>
           </div>
         </div>
 
@@ -1245,7 +1212,7 @@ function PotDepositSuccess({
 
   return (
     <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
-      <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center gap-6">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -1259,12 +1226,12 @@ function PotDepositSuccess({
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full">
           <div className="text-2xl font-bold mb-1">Deposit successful!</div>
           <div className="text-sm text-white/45 mb-6">
-            <span style={{ color: POT }} className="font-semibold">{formatAed(amount)}</span> added to {pot.emoji} {pot.name}
+            <span style={{ color: POT }} className="font-semibold">{formatAed(amount)}</span> added to {pot.name}
           </div>
 
           <div className="rounded-[24px] bg-[#0f1117] divide-y divide-white/8 text-left mb-6">
             {[
-              { label: "Pot",    value: `${pot.emoji} ${pot.name}` },
+              { label: "Pot",    value: pot.name },
               { label: "Amount", value: formatAed(amount) },
               { label: "Paid via", value: methodLabel },
               { label: "New pot balance", value: formatAed(pot.currentAmount) },
@@ -1308,10 +1275,7 @@ function PotWithdraw({
   return (
     <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{pot.emoji}</span>
-          <span className="font-semibold">{pot.name}</span>
-        </div>
+        <div className="font-semibold">{pot.name}</div>
         <div className="text-xl font-semibold">Withdraw from pot</div>
 
         <div className="rounded-[18px] border border-white/8 px-4 py-3 flex justify-between items-center">
@@ -1388,7 +1352,7 @@ function DeleteConfirm({
             <Trash2 className="h-7 w-7 text-red-400" />
           </div>
           <div>
-            <div className="text-xl font-semibold mb-2">Delete {pot.emoji} {pot.name}?</div>
+            <div className="text-xl font-semibold mb-2">Delete {pot.name}?</div>
             <div className="text-sm text-white/55 max-w-[260px] mx-auto">
               {pot.currentAmount > 0
                 ? <><span className="text-white font-semibold">{formatAed(pot.currentAmount)}</span> will be returned to your spendable wallet balance.</>
@@ -1423,6 +1387,175 @@ function DeleteConfirm({
   );
 }
 
+// ─── Pot Transfer ─────────────────────────────────────────────────────────────
+function PotTransfer({
+  destPot, allPots, onBack, onConfirm,
+}: {
+  destPot: Pot;
+  allPots: Pot[];
+  onBack: () => void;
+  onConfirm: (amount: number, sourcePotId: string) => void;
+}) {
+  const [sourceId, setSourceId] = useState<string | null>(null);
+  const [raw, setRaw] = useState("");
+
+  const eligible = allPots.filter((p) => p.id !== destPot.id && p.currentAmount > 0);
+  const sourcePot = allPots.find((p) => p.id === sourceId) ?? null;
+  const amount = parseFloat(raw) || 0;
+
+  const destRemaining = Math.max(0, destPot.targetAmount - destPot.currentAmount);
+  const sourceMax = sourcePot?.currentAmount ?? 0;
+  const isOverSource = amount > sourceMax;
+  const isOverDest = destRemaining > 0 && amount > destRemaining;
+  const hasError = isOverSource || isOverDest;
+  const canConfirm = amount > 0 && sourcePot !== null && !hasError;
+
+  // Phase 1 — pick source pot
+  if (!sourceId) {
+    return (
+      <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
+          <div>
+            <div className="text-xl font-semibold mb-1">Transfer to {destPot.name}</div>
+            <div className="text-sm text-white/45">Choose which pot to move money from.</div>
+          </div>
+          <div className="flex flex-col gap-2">
+            {eligible.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSourceId(p.id)}
+                className="rounded-[18px] border border-white/8 bg-[#0f1117] px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-110"
+              >
+                <div>
+                  <div className="text-sm font-semibold">{p.name}</div>
+                  <div className="text-xs text-white/40 mt-0.5">{formatAed(p.currentAmount)} available</div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-white/30 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      </PageShell>
+    );
+  }
+
+  // Phase 2 — enter amount
+  return (
+    <PageShell onBack={() => { setSourceId(null); setRaw(""); }} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
+        <div>
+          <div className="text-xl font-semibold mb-1">How much to transfer?</div>
+          <div className="text-sm text-white/45">From {sourcePot!.name} → {destPot.name}</div>
+        </div>
+
+        {/* Source / dest balance info */}
+        <div className="flex flex-col gap-2">
+          <div className="rounded-[18px] border border-white/8 px-4 py-3 flex items-center justify-between">
+            <div className="text-sm text-white/55">Available in {sourcePot!.name}</div>
+            <div className="text-sm font-semibold">{formatAed(sourceMax)}</div>
+          </div>
+          <div className="rounded-[18px] border border-white/8 px-4 py-3 flex items-center justify-between">
+            <div className="text-sm text-white/55">Remaining goal in {destPot.name}</div>
+            <div className="text-sm font-semibold">{formatAed(destRemaining)}</div>
+          </div>
+        </div>
+
+        {/* Amount input */}
+        <div
+          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2 transition"
+          style={{ borderColor: hasError ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+        >
+          <div className="text-xs text-white/45 mb-1">Amount</div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-semibold text-white/40">AED</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
+              placeholder="0"
+              value={raw}
+              onChange={(e) => { if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setRaw(e.target.value); }}
+              autoFocus
+            />
+          </div>
+          {isOverSource && (
+            <div className="text-xs text-red-400 mt-1">Exceeds available balance in {sourcePot!.name}</div>
+          )}
+          {!isOverSource && isOverDest && (
+            <div className="text-xs text-red-400 mt-1">Exceeds remaining goal in {destPot.name} ({formatAed(destRemaining)} needed)</div>
+          )}
+        </div>
+
+        <button
+          onClick={() => canConfirm && onConfirm(amount, sourceId)}
+          disabled={!canConfirm}
+          className="rounded-full py-4 text-sm font-semibold transition"
+          style={{ background: canConfirm ? POT : "rgba(255,255,255,0.1)", color: canConfirm ? "#000" : "rgba(255,255,255,0.3)" }}
+        >
+          Confirm transfer
+        </button>
+      </motion.div>
+    </PageShell>
+  );
+}
+
+// ─── Pot Transfer Success ──────────────────────────────────────────────────────
+function PotTransferSuccess({
+  amount, sourcePot, destPot, onDone,
+}: {
+  amount: number;
+  sourcePot: Pot;
+  destPot: Pot;
+  onDone: () => void;
+}) {
+  return (
+    <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className="flex h-20 w-20 items-center justify-center rounded-full"
+          style={{ background: POT_DIM, border: `2px solid ${POT}44` }}
+        >
+          <Check className="h-9 w-9" style={{ color: POT }} />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full">
+          <div className="text-2xl font-bold mb-1">Transfer done!</div>
+          <div className="text-sm text-white/45 mb-6">
+            <span style={{ color: POT }} className="font-semibold">{formatAed(amount)}</span> moved from {sourcePot.name} to {destPot.name}
+          </div>
+
+          <div className="rounded-[24px] bg-[#0f1117] divide-y divide-white/8 text-left">
+            {[
+              { label: "From", value: sourcePot.name },
+              { label: "To",   value: destPot.name },
+              { label: "Amount", value: formatAed(amount) },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between px-5 py-3.5">
+                <span className="text-sm text-white/50">{label}</span>
+                <span className="text-sm font-semibold">{value}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          onClick={onDone}
+          className="rounded-full px-8 py-4 text-sm font-semibold text-black w-full"
+          style={{ background: POT }}
+        >
+          Done
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function PotsPrototype() {
   const [pots, setPots] = useState<Pot[]>([]);
@@ -1432,23 +1565,30 @@ export default function PotsPrototype() {
 
   // Create flow state
   const [draftName, setDraftName] = useState("");
-  const [draftEmoji, setDraftEmoji] = useState("🎯");
   const [draftTarget, setDraftTarget] = useState(0);
   const [lastDeposit, setLastDeposit] = useState(0);
 
   // Add money flow state
   const [depositAmount, setDepositAmount] = useState(0);
   const [depositMethod, setDepositMethod] = useState<PayMethod>("wallet");
+  const [monthlyDeposited, setMonthlyDeposited] = useState(0);
+
+  // Transfer flow state
+  const [transferAmount, setTransferAmount] = useState(0);
+  const [transferSourceId, setTransferSourceId] = useState<string | null>(null);
+
+  const MONTHLY_LIMIT = 25_000;
+  const monthlyRemaining = MONTHLY_LIMIT - monthlyDeposited;
 
   const potsTotal = useMemo(() => pots.reduce((s, p) => s + p.currentAmount, 0), [pots]);
+  const potsGoalTotal = useMemo(() => pots.reduce((s, p) => s + p.targetAmount, 0), [pots]);
   const spendable = walletTotal - potsTotal;
   const selectedPot = pots.find((p) => p.id === selectedPotId) ?? null;
 
   function navigate(s: string) { setScreen(s === "money" ? "money-hub" : s); }
 
-  function handleCreateStep1(name: string, emoji: string) {
+  function handleCreateStep1(name: string) {
     setDraftName(name);
-    setDraftEmoji(emoji);
     setScreen("create-pot-2");
   }
 
@@ -1461,7 +1601,6 @@ export default function PotsPrototype() {
     const newPot: Pot = {
       id: crypto.randomUUID(),
       name: draftName,
-      emoji: draftEmoji,
       targetAmount: draftTarget,
       currentAmount: deposit,
       createdAt: new Date().toISOString(),
@@ -1471,7 +1610,7 @@ export default function PotsPrototype() {
     setScreen("create-pot-success");
   }
 
-  // Wallet deposit: deducts from spendable (pot allocation)
+  // Wallet deposit: deducts from spendable (pot allocation) — not a real deposit, no limit deduction
   function handleWalletDeposit() {
     setPots((prev) =>
       prev.map((p) => p.id === selectedPotId ? { ...p, currentAmount: p.currentAmount + depositAmount } : p)
@@ -1486,6 +1625,7 @@ export default function PotsPrototype() {
       prev.map((p) => p.id === selectedPotId ? { ...p, currentAmount: p.currentAmount + depositAmount } : p)
     );
     setWalletTotal((prev) => prev + depositAmount);
+    setMonthlyDeposited((prev) => prev + depositAmount);
     setDepositMethod("debit");
     setScreen("pot-deposit-success");
   }
@@ -1503,7 +1643,18 @@ export default function PotsPrototype() {
     setScreen("pots-hub");
   }
 
-  const sharedProps = { walletTotal, spendable, potsTotal, potsCount: pots.length };
+  function handleTransfer(amount: number, sourcePotId: string) {
+    setTransferAmount(amount);
+    setTransferSourceId(sourcePotId);
+    setPots((prev) => prev.map((p) => {
+      if (p.id === sourcePotId) return { ...p, currentAmount: p.currentAmount - amount };
+      if (p.id === selectedPotId) return { ...p, currentAmount: p.currentAmount + amount };
+      return p;
+    }));
+    setScreen("pot-transfer-success");
+  }
+
+  const sharedProps = { walletTotal, spendable, potsTotal, potsCount: pots.length, potsGoalTotal };
 
 
   return (
@@ -1518,19 +1669,19 @@ export default function PotsPrototype() {
         <CreatePot1 key="create-1" onBack={() => setScreen("pots-hub")} onNext={handleCreateStep1} />
       )}
       {screen === "create-pot-2" && (
-        <CreatePot2 key="create-2" potName={draftName} potEmoji={draftEmoji} onBack={() => setScreen("create-pot-1")} onNext={handleCreateStep2} />
+        <CreatePot2 key="create-2" potName={draftName} onBack={() => setScreen("create-pot-1")} onNext={handleCreateStep2} />
       )}
       {screen === "create-pot-3" && (
-        <CreatePot3 key="create-3" potName={draftName} potEmoji={draftEmoji} targetAmount={draftTarget} spendable={spendable} onBack={() => setScreen("create-pot-2")} onCreate={handleCreateStep3} />
+        <CreatePot3 key="create-3" potName={draftName} targetAmount={draftTarget} spendable={spendable} onBack={() => setScreen("create-pot-2")} onCreate={handleCreateStep3} />
       )}
       {screen === "create-pot-success" && (
-        <CreatePotSuccess key="success" potName={draftName} potEmoji={draftEmoji} depositAmount={lastDeposit} onDone={() => setScreen("pots-hub")} />
+        <CreatePotSuccess key="success" potName={draftName} depositAmount={lastDeposit} onDone={() => setScreen("pots-hub")} />
       )}
       {screen === "pot-detail" && selectedPot && (
-        <PotDetail key="pot-detail" pot={selectedPot} spendable={spendable} onBack={() => setScreen("pots-hub")} onAddMoney={() => setScreen("pot-add")} onWithdraw={() => setScreen("pot-withdraw")} onDeleteConfirm={() => setScreen("pot-delete")} />
+        <PotDetail key="pot-detail" pot={selectedPot} spendable={spendable} otherPotsExist={pots.length > 1} onBack={() => setScreen("pots-hub")} onAddMoney={() => setScreen("pot-add")} onWithdraw={() => setScreen("pot-withdraw")} onTransfer={() => setScreen("pot-transfer")} onDeleteConfirm={() => setScreen("pot-delete")} />
       )}
       {screen === "pot-add" && selectedPot && (
-        <PotAddMoney key="pot-add" pot={selectedPot} spendable={spendable} onBack={() => setScreen("pot-detail")}
+        <PotAddMoney key="pot-add" pot={selectedPot} spendable={spendable} monthlyRemaining={monthlyRemaining} onBack={() => setScreen("pot-detail")}
           onNext={(amt) => { setDepositAmount(amt); setScreen("pot-payment-method"); }} />
       )}
       {screen === "pot-payment-method" && selectedPot && (
@@ -1553,6 +1704,18 @@ export default function PotsPrototype() {
       )}
       {screen === "pot-delete" && selectedPot && (
         <DeleteConfirm key="pot-delete" pot={selectedPot} onBack={() => setScreen("pot-detail")} onDelete={handleDelete} />
+      )}
+      {screen === "pot-transfer" && selectedPot && (
+        <PotTransfer key="pot-transfer" destPot={selectedPot} allPots={pots} onBack={() => setScreen("pot-detail")} onConfirm={handleTransfer} />
+      )}
+      {screen === "pot-transfer-success" && selectedPot && transferSourceId && (
+        <PotTransferSuccess
+          key="pot-transfer-success"
+          amount={transferAmount}
+          sourcePot={pots.find((p) => p.id === transferSourceId)!}
+          destPot={selectedPot}
+          onDone={() => setScreen("pot-detail")}
+        />
       )}
     </AnimatePresence>
   );
