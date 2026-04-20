@@ -383,6 +383,70 @@ function MoneyHub({
   );
 }
 
+// ─── Pots Onboarding ─────────────────────────────────────────────────────────
+function PotsOnboarding({ onBack, onStart }: { onBack: () => void; onStart: () => void }) {
+  const faqs = [
+    {
+      icon: Target,
+      q: "What are pots?",
+      a: "Pots are virtual compartments inside your Botim wallet. Give each one a name and a savings goal — the money stays in your wallet but is earmarked just for that purpose.",
+    },
+    {
+      icon: Wallet,
+      q: "Can I use my balance anytime?",
+      a: "Yes. Your pot balance is always yours. Withdraw back to your spendable wallet at any time — no lock-ins, no penalties.",
+    },
+    {
+      icon: TrendingUp,
+      q: "Can I transfer in/out of a pot anytime?",
+      a: "Absolutely. Add funds from your wallet or by card, withdraw back to your wallet, or move money between pots — all instantly.",
+    },
+    {
+      icon: Sparkles,
+      q: "How do pots help me?",
+      a: "By separating money for specific goals you avoid accidentally spending it. The progress bar keeps you motivated and shows exactly how close you are to each target.",
+    },
+  ];
+
+  return (
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 pt-2">
+        {/* Hero */}
+        <div className="flex flex-col items-center text-center py-6 gap-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: POT_DIM }}>
+            <Target className="h-7 w-7" style={{ color: POT }} />
+          </div>
+          <div>
+            <div className="text-2xl font-bold mb-1">Save smarter with Pots</div>
+            <div className="text-sm text-white/45">Divide your wallet into goal-based compartments.</div>
+          </div>
+        </div>
+
+        {/* FAQ cards */}
+        {faqs.map(({ icon: Icon, q, a }, i) => (
+          <div key={i} className="rounded-[20px] bg-[#0f1117] border border-white/8 p-4 flex gap-4">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: POT_DIM }}>
+              <Icon className="h-4 w-4" style={{ color: POT }} />
+            </div>
+            <div>
+              <div className="text-sm font-semibold mb-1">{q}</div>
+              <div className="text-xs text-white/45 leading-relaxed">{a}</div>
+            </div>
+          </div>
+        ))}
+
+        <button
+          onClick={onStart}
+          className="rounded-full py-4 text-sm font-semibold text-black mt-2"
+          style={{ background: POT }}
+        >
+          Create my first pot
+        </button>
+      </motion.div>
+    </PageShell>
+  );
+}
+
 // ─── PotsHub ─────────────────────────────────────────────────────────────────
 function PotsHub({
   pots, walletTotal, spendable, onNavigate, onSelectPot,
@@ -1670,7 +1734,10 @@ export default function PotsPrototype() {
       {screen === "money-hub" && (
         <MoneyHub key="money-hub" {...sharedProps} onNavigate={navigate} />
       )}
-      {screen === "pots-hub" && (
+      {screen === "pots-hub" && pots.length === 0 && (
+        <PotsOnboarding key="pots-onboarding" onBack={() => navigate("money")} onStart={() => setScreen("create-pot-1")} />
+      )}
+      {screen === "pots-hub" && pots.length > 0 && (
         <PotsHub key="pots-hub" pots={pots} walletTotal={walletTotal} spendable={spendable} onNavigate={navigate} onSelectPot={(id) => { setSelectedPotId(id); setScreen("pot-detail"); }} />
       )}
       {screen === "create-pot-1" && (
