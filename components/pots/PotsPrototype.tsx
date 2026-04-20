@@ -1419,21 +1419,29 @@ function PotTransfer({
             <div className="text-xl font-semibold mb-1">Transfer to {destPot.name}</div>
             <div className="text-sm text-white/45">Choose which pot to move money from.</div>
           </div>
-          <div className="flex flex-col gap-2">
-            {eligible.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSourceId(p.id)}
-                className="rounded-[18px] border border-white/8 bg-[#0f1117] px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-110"
-              >
-                <div>
-                  <div className="text-sm font-semibold">{p.name}</div>
-                  <div className="text-xs text-white/40 mt-0.5">{formatAed(p.currentAmount)} available</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-white/30 shrink-0" />
-              </button>
-            ))}
-          </div>
+          {eligible.length === 0 ? (
+            <div className="rounded-[20px] border border-white/8 bg-[#0f1117] px-5 py-8 flex flex-col items-center text-center gap-3">
+              <div className="text-2xl">🪣</div>
+              <div className="text-sm font-semibold">No pots available to transfer from</div>
+              <div className="text-xs text-white/40 max-w-[220px]">Your other pots have no balance. Add money to a pot first before transferring.</div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {eligible.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSourceId(p.id)}
+                  className="rounded-[18px] border border-white/8 bg-[#0f1117] px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-110"
+                >
+                  <div>
+                    <div className="text-sm font-semibold">{p.name}</div>
+                    <div className="text-xs text-white/40 mt-0.5">{formatAed(p.currentAmount)} available</div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-white/30 shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
         </motion.div>
       </PageShell>
     );
