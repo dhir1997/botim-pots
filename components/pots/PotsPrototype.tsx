@@ -9,14 +9,18 @@ import {
   Check,
   ChevronRight,
   CreditCard,
+  Globe,
   Home,
+  LayoutGrid,
   MessageCircle,
   MoreHorizontal,
   Phone,
   PieChart,
   Plus,
   QrCode,
+  Receipt,
   Send,
+  ShieldCheck,
   Sparkles,
   Trash2,
   TrendingUp,
@@ -26,9 +30,10 @@ import {
 } from "lucide-react";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const phone = "mx-auto w-full max-w-[420px] h-screen bg-black text-white flex flex-col";
-const POT = "#c084fc";
-const POT_DIM = "rgba(192,132,252,0.12)";
+const phone = "mx-auto w-full max-w-[420px] h-screen bg-[#f5f5f5] text-gray-900 flex flex-col border border-gray-300 shadow-xl overflow-hidden";
+const POT = "#1A4FDB";
+const POT_DIM = "rgba(26,79,219,0.1)";
+const HERO_GRADIENT = "linear-gradient(160deg,#0d1b6b 0%,#1e3a9f 60%,#2952cc 100%)";
 const INITIAL_WALLET = 3000;
 const MAX_POTS = 10;
 
@@ -47,19 +52,41 @@ interface Pot {
   targetAmount: number;
   currentAmount: number;
   createdAt: string;
+  targetDate?: string;
+}
+
+// ─── Dirham symbol ───────────────────────────────────────────────────────────
+function DirhemSign({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 60 72" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path
+        fillRule="evenodd"
+        d="M8,4 L8,68 L26,68 C53,68 55,52 55,36 C55,20 53,4 26,4 Z M18,14 L18,58 C40,58 45,50 45,36 C45,22 40,14 18,14 Z"
+      />
+      <rect x="0" y="26" width="63" height="7" />
+      <rect x="0" y="40" width="63" height="7" />
+    </svg>
+  );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatAed(n: number) {
-  return `AED ${n.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return n.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function DhAmt({ v, className }: { v: number; className?: string }) {
+  return (
+    <span className={`inline-flex items-baseline gap-1 ${className ?? ""}`}>
+      <DirhemSign className="h-[0.85em] w-auto relative top-[0.05em] shrink-0" />
+      {formatAed(v)}
+    </span>
+  );
 }
 
 function pctOf(current: number, target: number) {
   if (target <= 0) return 0;
   return Math.min(100, (current / target) * 100);
 }
-
-// ─── Emoji options ────────────────────────────────────────────────────────────
 
 // ─── Bottom nav ───────────────────────────────────────────────────────────────
 function BottomNav({ current, onNavigate }: { current: string; onNavigate: (s: string) => void }) {
@@ -68,15 +95,15 @@ function BottomNav({ current, onNavigate }: { current: string; onNavigate: (s: s
     { id: "calls", label: "Calls", icon: Phone },
     { id: "chats", label: "Chats", icon: MessageCircle },
     { id: "money", label: "Money", icon: Wallet },
-    { id: "all", label: "All", icon: MoreHorizontal },
+    { id: "all", label: "All", icon: LayoutGrid },
   ];
   return (
-    <div className="border-t border-white/10 bg-black/95 backdrop-blur px-3 py-3">
+    <div className="border-t border-gray-200 bg-white/95 backdrop-blur px-3 py-3">
       <div className="grid grid-cols-5 gap-1">
         {items.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => onNavigate(id)} className="flex flex-col items-center gap-1 py-1 text-xs">
-            <Icon className={`h-5 w-5 ${current === id ? "text-white" : "text-white/45"}`} />
-            <span className={current === id ? "text-white font-semibold" : "text-white/45"}>{label}</span>
+            <Icon className={`h-5 w-5 ${current === id ? "text-[#1A4FDB]" : "text-gray-400"}`} />
+            <span className={current === id ? "text-[#1A4FDB] font-semibold" : "text-gray-400"}>{label}</span>
           </button>
         ))}
       </div>
@@ -90,7 +117,7 @@ function TabPill({ active, children, onClick }: { active?: boolean; children: Re
     <button
       onClick={onClick}
       className="rounded-full px-5 py-2 text-sm font-semibold transition"
-      style={active ? { background: "rgba(255,255,255,0.14)", color: "#fff" } : { background: "transparent", color: "rgba(255,255,255,0.45)" }}
+      style={active ? { background: "rgba(26,79,219,0.1)", color: "#1A4FDB" } : { background: "transparent", color: "rgba(17,24,39,0.45)" }}
     >
       {children}
     </button>
@@ -100,7 +127,7 @@ function TabPill({ active, children, onClick }: { active?: boolean; children: Re
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 function ProgressBar({ pct, color = POT }: { pct: number; color?: string }) {
   return (
-    <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
       <motion.div
         className="h-full rounded-full"
         style={{ backgroundColor: color }}
@@ -126,19 +153,19 @@ function PageShell({
   headerRight?: React.ReactNode;
 }) {
   return (
-    <div className={phone} style={{ background: gradient ?? "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
+    <div className={phone} style={{ background: gradient ?? "#f5f5f5" }}>
       <div className="shrink-0 flex items-center justify-between px-5 pt-6 pb-2">
         <div className="flex items-center gap-3">
           {onBack && (
-            <button onClick={onBack} className="rounded-full bg-white/10 p-2">
-              <ArrowLeft className="h-5 w-5" />
+            <button onClick={onBack} className="rounded-full bg-gray-200/70 p-2">
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
             </button>
           )}
           {subtitle && (
             <div className="flex items-center gap-2">
-              <span className="text-[28px] font-bold tracking-tight">botim</span>
+              <span className="text-[28px] font-bold tracking-tight text-gray-900">botim</span>
               <span
-                className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-black"
+                className="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider text-white"
                 style={{ background: POT }}
               >
                 {badge ?? subtitle}
@@ -147,7 +174,7 @@ function PageShell({
           )}
         </div>
         {headerRight ?? (
-          <div className="h-10 w-10 rounded-full bg-[radial-gradient(circle_at_35%_35%,#d4ff8e,#457a33)] ring-2 ring-white/10" />
+          <div className="h-10 w-10 rounded-full bg-[radial-gradient(circle_at_35%_35%,#d4ff8e,#457a33)] ring-2 ring-gray-200" />
         )}
       </div>
       <div className="flex-1 overflow-y-auto px-5 pb-6">{children}</div>
@@ -180,7 +207,6 @@ function MoneyHub({
       badge="MONEY"
       navCurrent="money"
       onNavigate={onNavigate}
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
     >
       {/* Tabs */}
       <div className="flex gap-1 mb-5">
@@ -195,75 +221,29 @@ function MoneyHub({
           <motion.div key="pay" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="flex flex-col gap-5">
             {/* Wallet card */}
             <div
-              className="rounded-[30px] border border-white/10 p-6"
-              style={{ background: "linear-gradient(135deg,rgba(20,14,40,0.95),rgba(5,5,20,0.92))" }}
+              className="rounded-[30px] p-6"
+              style={{ background: HERO_GRADIENT }}
             >
-              <div className="text-sm text-white/55 mb-1">Wallet balance</div>
-              <div className="text-4xl font-semibold tracking-tight mb-1">{formatAed(walletTotal)}</div>
-              {potsTotal > 0 && (
-                <div className="text-xs text-white/40 mb-4">
-                  Includes <span style={{ color: POT }}>{formatAed(potsTotal)}</span> allocated to pots
-                </div>
-              )}
-              {potsTotal > 0 && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl bg-white/8 px-3 py-2.5">
-                    <div className="text-xs text-white/45">Spendable</div>
-                    <div className="text-sm font-semibold mt-0.5">{formatAed(spendable)}</div>
-                  </div>
-                  <button
-                    onClick={() => onNavigate("pots-hub")}
-                    className="rounded-xl px-3 py-2.5 text-left transition hover:brightness-110"
-                    style={{ background: POT_DIM }}
-                  >
-                    <div className="text-xs" style={{ color: `${POT}99` }}>In pots</div>
-                    <div className="text-sm font-semibold mt-0.5" style={{ color: POT }}>{formatAed(potsTotal)}</div>
-                  </button>
-                </div>
-              )}
+              <div className="text-sm text-white/70 mb-1">Wallet balance</div>
+              <div className="text-4xl font-semibold tracking-tight text-white"><DhAmt v={spendable} /></div>
             </div>
 
             {/* Quick actions */}
             <div className="grid grid-cols-4 gap-3">
               {[{ icon: Send, label: "Send" }, { icon: QrCode, label: "QR code" }, { icon: Plus, label: "Add funds" }, { icon: ArrowDown, label: "Withdraw" }].map(({ icon: Icon, label }) => (
                 <button key={label} className="flex flex-col items-center gap-2">
-                  <div className="flex h-14 w-full items-center justify-center rounded-[18px] bg-white/10 text-white/80">
+                  <div className="flex h-14 w-full items-center justify-center rounded-[18px] bg-white border border-gray-100 text-gray-600">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-xs text-white/70">{label}</span>
+                  <span className="text-xs text-gray-500">{label}</span>
                 </button>
               ))}
             </div>
 
-            {/* Pots entry */}
-            <button
-              onClick={() => onNavigate("pots-hub")}
-              className="w-full text-left rounded-[24px] border border-white/8 p-4 flex items-center gap-4 transition hover:brightness-110"
-              style={{ background: "linear-gradient(135deg,rgba(30,10,60,0.9),rgba(10,5,20,0.85))" }}
-            >
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-xl" style={{ background: POT_DIM }}>
-                🏺
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm">My Pots</div>
-                <div className="text-xs text-white/45 mt-0.5">
-                  {potsCount === 0
-                    ? "Save toward any goal"
-                    : `${potsCount} pot${potsCount > 1 ? "s" : ""} · ${formatAed(potsTotal)} saved`}
-                </div>
-                {potsCount > 0 && (
-                  <div className="mt-2">
-                    <ProgressBar pct={potsGoalTotal > 0 ? Math.min(100, (potsTotal / potsGoalTotal) * 100) : 0} />
-                  </div>
-                )}
-              </div>
-              <ChevronRight className="h-4 w-4 text-white/30 flex-shrink-0" />
-            </button>
-
             {/* Recent transactions */}
             <div>
-              <div className="text-sm font-semibold text-white/55 mb-3">Recent</div>
-              <div className="rounded-[20px] bg-[#0f1117] divide-y divide-white/8">
+              <div className="text-sm font-semibold text-gray-500 mb-3">Recent</div>
+              <div className="rounded-[20px] bg-white border border-gray-100 divide-y divide-gray-100">
                 {[
                   { label: "Noon.com",   sub: "Online purchase", amt: "-AED 149.00"   },
                   { label: "Salary",     sub: "Bank transfer",   amt: "+AED 8,500.00" },
@@ -271,10 +251,10 @@ function MoneyHub({
                 ].map(({ label, sub, amt }) => (
                   <div key={label} className="flex items-center justify-between px-4 py-3">
                     <div>
-                      <div className="text-sm font-semibold">{label}</div>
-                      <div className="text-xs text-white/45">{sub}</div>
+                      <div className="text-sm font-semibold text-gray-900">{label}</div>
+                      <div className="text-xs text-gray-500">{sub}</div>
                     </div>
-                    <div className={`text-sm font-semibold ${amt.startsWith("+") ? "text-[#00c896]" : "text-white"}`}>{amt}</div>
+                    <div className={`text-sm font-semibold ${amt.startsWith("+") ? "text-[#00c896]" : "text-gray-900"}`}>{amt}</div>
                   </div>
                 ))}
               </div>
@@ -285,9 +265,9 @@ function MoneyHub({
         {/* ── Credit tab ─────────────────────────────────────────────────── */}
         {tab === "credit" && (
           <motion.div key="credit" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-            <div className="rounded-[28px] bg-[#0f1117] p-6">
-              <div className="text-2xl font-semibold mb-2">Credit</div>
-              <p className="text-white/55 text-sm leading-relaxed">
+            <div className="rounded-[28px] bg-white border border-gray-100 p-6">
+              <div className="text-2xl font-semibold mb-2 text-gray-900">Credit</div>
+              <p className="text-gray-500 text-sm leading-relaxed">
                 Buy now, pay later and credit products live here. Out of scope for this prototype.
               </p>
             </div>
@@ -300,12 +280,12 @@ function MoneyHub({
 
             {/* Total wealth card */}
             <div
-              className="rounded-[30px] border border-white/10 p-6"
-              style={{ background: "linear-gradient(135deg,rgba(10,30,50,0.98),rgba(5,15,25,0.95))" }}
+              className="rounded-[30px] p-6"
+              style={{ background: HERO_GRADIENT }}
             >
-              <div className="text-sm text-white/55 mb-1">Total wealth</div>
-              <div className="text-4xl font-semibold tracking-tight">
-                {formatAed(totalWealth)}
+              <div className="text-sm text-white/70 mb-1">Total wealth</div>
+              <div className="text-4xl font-semibold tracking-tight text-white">
+                <DhAmt v={totalWealth} />
               </div>
               {/* Breakdown bar */}
               <div className="mt-4">
@@ -320,7 +300,7 @@ function MoneyHub({
                 </div>
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                   {STATIC_HOLDINGS.map((h) => (
-                    <div key={h.label} className="flex items-center gap-1 text-xs text-white/50">
+                    <div key={h.label} className="flex items-center gap-1 text-xs text-white/60">
                       <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: h.color }} />
                       {h.label} {totalWealth > 0 ? Math.round((h.valueAed / totalWealth) * 100) : 0}%
                     </div>
@@ -330,25 +310,25 @@ function MoneyHub({
             </div>
 
             {/* My holdings */}
-            <div className="rounded-[28px] bg-[#0f1117] p-5">
-              <div className="mb-3 text-base font-semibold">My holdings</div>
+            <div className="rounded-[28px] bg-white border border-gray-100 p-5">
+              <div className="mb-3 text-base font-semibold text-gray-900">My holdings</div>
               <div className="flex flex-col gap-2">
 
                 {/* Static holdings */}
                 {STATIC_HOLDINGS.map((h) => (
-                  <div key={h.id} className="flex items-center justify-between rounded-[16px] bg-white/5 px-4 py-3.5">
+                  <div key={h.id} className="flex items-center justify-between rounded-[16px] bg-gray-50 px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="rounded-full p-2 shrink-0" style={{ background: `${h.color}18`, color: h.color }}>
                         <TrendingUp className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium">{h.label}</div>
-                        <div className="text-xs text-white/40">{h.ticker}</div>
+                        <div className="text-sm font-medium text-gray-900">{h.label}</div>
+                        <div className="text-xs text-gray-400">{h.ticker}</div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-semibold">{formatAed(h.valueAed)}</div>
-                      <div className={`text-xs ${h.change >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      <div className="text-sm font-semibold text-gray-900"><DhAmt v={h.valueAed} /></div>
+                      <div className={`text-xs ${h.change >= 0 ? "text-emerald-500" : "text-red-400"}`}>
                         {h.change >= 0 ? "+" : ""}{h.change}%
                       </div>
                     </div>
@@ -358,8 +338,8 @@ function MoneyHub({
             </div>
 
             {/* Invest more */}
-            <div className="rounded-[28px] bg-[#0f1117] p-5">
-              <div className="mb-3 text-base font-semibold">Invest more</div>
+            <div className="rounded-[28px] bg-white border border-gray-100 p-5">
+              <div className="mb-3 text-base font-semibold text-gray-900">Invest more</div>
               <div className="grid grid-cols-4 gap-3">
                 {[
                   { icon: TrendingUp, label: "Buy Gold"   },
@@ -367,9 +347,9 @@ function MoneyHub({
                   { icon: PieChart,   label: "Crypto"     },
                   { icon: MoreHorizontal, label: "More"   },
                 ].map(({ icon: Icon, label }) => (
-                  <button key={label} className="flex flex-col items-center gap-1.5 rounded-[16px] bg-white/5 py-3 hover:bg-white/8 transition">
-                    <Icon className="h-5 w-5 text-white/70" />
-                    <span className="text-[11px] text-white/60">{label}</span>
+                  <button key={label} className="flex flex-col items-center gap-1.5 rounded-[16px] bg-gray-50 py-3 hover:bg-gray-100 transition">
+                    <Icon className="h-5 w-5 text-gray-500" />
+                    <span className="text-[11px] text-gray-500">{label}</span>
                   </button>
                 ))}
               </div>
@@ -383,8 +363,77 @@ function MoneyHub({
   );
 }
 
+// ─── All Services ─────────────────────────────────────────────────────────────
+function AllServices({ onNavigate }: { onNavigate: (s: string) => void }) {
+  const categories = [
+    {
+      label: "Save & Grow",
+      items: [
+        { emoji: "🏺", label: "My Pots", sub: "Goal-based saving", action: "pots-hub" },
+        { icon: TrendingUp, label: "Investments", sub: "Gold, crypto & more", action: null },
+        { icon: PieChart, label: "Portfolios", sub: "Managed funds", action: null },
+        { icon: ShieldCheck, label: "Insurance", sub: "Protect what matters", action: null },
+      ],
+    },
+    {
+      label: "Send & Pay",
+      items: [
+        { icon: Send, label: "Send money", sub: "To contacts & accounts", action: null },
+        { icon: Globe, label: "Remittance", sub: "International transfers", action: null },
+        { icon: Receipt, label: "Pay bills", sub: "Utilities & services", action: null },
+        { icon: QrCode, label: "QR Pay", sub: "Scan to pay", action: null },
+      ],
+    },
+  ];
+
+  return (
+    <PageShell subtitle="SERVICES" badge="ALL" navCurrent="all" onNavigate={onNavigate}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 pb-4">
+        {categories.map(({ label, items }) => (
+          <div key={label}>
+            <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 px-1">{label}</div>
+            <div className="grid grid-cols-2 gap-3">
+              {items.map(({ emoji, icon: Icon, label: itemLabel, sub, action }) => (
+                <button
+                  key={itemLabel}
+                  onClick={() => action && onNavigate(action)}
+                  className="rounded-[20px] bg-white border border-gray-100 p-4 text-left flex flex-col gap-3 transition hover:shadow-sm"
+                  style={{ opacity: action ? 1 : 0.5, cursor: action ? "pointer" : "default" }}
+                >
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-xl"
+                    style={{ background: POT_DIM }}
+                  >
+                    {emoji ? (
+                      <span>{emoji}</span>
+                    ) : (
+                      Icon && <Icon className="h-5 w-5" style={{ color: POT }} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{itemLabel}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{sub}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </motion.div>
+    </PageShell>
+  );
+}
+
 // ─── Pots Onboarding ─────────────────────────────────────────────────────────
 function PotsOnboarding({ onBack, onStart }: { onBack: () => void; onStart: () => void }) {
+  const [showFaqs, setShowFaqs] = useState(false);
+
+  const heroPots = [
+    { emoji: "✈️", name: "Home Trip", current: 3200, target: 5000 },
+    { emoji: "📱", name: "New Phone", current: 850, target: 2500 },
+    { emoji: "🛡️", name: "Emergency", current: 4100, target: 8000 },
+  ];
+
   const faqs = [
     {
       icon: Target,
@@ -409,39 +458,119 @@ function PotsOnboarding({ onBack, onStart }: { onBack: () => void; onStart: () =
   ];
 
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 pt-2">
-        {/* Hero */}
-        <div className="flex flex-col items-center text-center py-6 gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full" style={{ background: POT_DIM }}>
-            <Target className="h-7 w-7" style={{ color: POT }} />
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2 pb-4">
+
+        {/* Hero — stacked pot cards */}
+        <div className="relative h-44 mx-2 mt-2">
+          {heroPots.map((p, i) => {
+            const offsets = [
+              { top: 24, scale: 0.88, zIndex: 0, opacity: 0.55 },
+              { top: 12, scale: 0.94, zIndex: 1, opacity: 0.75 },
+              { top: 0,  scale: 1,    zIndex: 2, opacity: 1 },
+            ];
+            const o = offsets[i];
+            const pct = Math.round((p.current / p.target) * 100);
+            return (
+              <div
+                key={i}
+                className="absolute inset-x-0 rounded-[22px] bg-white border border-gray-100 shadow-sm px-4 py-3"
+                style={{ top: o.top, transform: `scale(${o.scale})`, transformOrigin: "bottom center", zIndex: o.zIndex, opacity: o.opacity }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{p.emoji}</span>
+                    <span className="text-sm font-semibold text-gray-800">{p.name}</span>
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: POT }}>{pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: POT }} />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-xs text-gray-400"><DhAmt v={p.current} /></span>
+                  <span className="text-xs text-gray-400"><DhAmt v={p.target} /></span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Headline + subheadline */}
+        <div className="text-center px-2">
+          <div className="text-[22px] font-bold leading-snug text-gray-900 mb-2">
+            Your money, sorted by<br />what matters
           </div>
-          <div>
-            <div className="text-2xl font-bold mb-1">Save smarter with Pots</div>
-            <div className="text-sm text-white/45">Divide your wallet into goal-based compartments.</div>
+          <div className="text-sm text-gray-500 leading-relaxed">
+            Create pots for your goals — flight home, new phone, emergency fund. Watch them fill up. Withdraw anytime.
           </div>
         </div>
 
-        {/* FAQ cards */}
-        {faqs.map(({ icon: Icon, q, a }, i) => (
-          <div key={i} className="rounded-[20px] bg-[#0f1117] border border-white/8 p-4 flex gap-4">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: POT_DIM }}>
-              <Icon className="h-4 w-4" style={{ color: POT }} />
+        {/* Value pills */}
+        <div className="flex gap-2 justify-center px-1 flex-wrap">
+          {[
+            { icon: "🎯", label: "Goal-based" },
+            { icon: "⚡", label: "Instant access" },
+            { icon: "🔒", label: "No lock-ins" },
+          ].map(({ icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-gray-700"
+              style={{ borderColor: "rgba(26,79,219,0.25)", background: POT_DIM }}
+            >
+              <span>{icon}</span>
+              <span>{label}</span>
             </div>
-            <div>
-              <div className="text-sm font-semibold mb-1">{q}</div>
-              <div className="text-xs text-white/45 leading-relaxed">{a}</div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
+        {/* Reassurance */}
+        <div className="text-center text-[11px] text-gray-400 leading-relaxed px-4">
+          Money stays in your Botim wallet — always yours, always accessible.
+        </div>
+
+        {/* CTA */}
         <button
           onClick={onStart}
-          className="rounded-full py-4 text-sm font-semibold text-black mt-2"
+          className="rounded-full py-4 text-sm font-semibold text-white mx-0"
           style={{ background: POT }}
         >
           Create my first pot
         </button>
+
+        {/* Ghost link to FAQs */}
+        <button
+          onClick={() => setShowFaqs(v => !v)}
+          className="text-sm text-center font-medium pb-1"
+          style={{ color: POT }}
+        >
+          How do pots work? {showFaqs ? "↑" : "→"}
+        </button>
+
+        {/* Collapsible FAQs */}
+        <AnimatePresence>
+          {showFaqs && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex flex-col gap-3 overflow-hidden"
+            >
+              {faqs.map(({ icon: Icon, q, a }, i) => (
+                <div key={i} className="rounded-[20px] bg-white border border-gray-100 p-4 flex gap-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ background: POT_DIM }}>
+                    <Icon className="h-4 w-4" style={{ color: POT }} />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold mb-1 text-gray-900">{q}</div>
+                    <div className="text-xs text-gray-500 leading-relaxed">{a}</div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </motion.div>
     </PageShell>
   );
@@ -449,13 +578,15 @@ function PotsOnboarding({ onBack, onStart }: { onBack: () => void; onStart: () =
 
 // ─── PotsHub ─────────────────────────────────────────────────────────────────
 function PotsHub({
-  pots, walletTotal, spendable, onNavigate, onSelectPot,
+  pots, walletTotal, spendable, onNavigate, onSelectPot, onWithdrawPot, onNewPot,
 }: {
   pots: Pot[];
   walletTotal: number;
   spendable: number;
   onNavigate: (s: string) => void;
   onSelectPot: (id: string) => void;
+  onWithdrawPot: (id: string) => void;
+  onNewPot: () => void;
 }) {
   const totalSaved = pots.reduce((s, p) => s + p.currentAmount, 0);
   const totalGoal = pots.reduce((s, p) => s + p.targetAmount, 0);
@@ -464,41 +595,50 @@ function PotsHub({
 
   return (
     <PageShell
-      onBack={() => onNavigate("money-hub")}
+      onBack={() => onNavigate("all-services")}
       subtitle="POTS"
       badge="POTS"
       navCurrent="money"
       onNavigate={onNavigate}
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
       headerRight={
         <button
           onClick={() => atLimit ? undefined : onNavigate("create-pot-1")}
           className="flex h-9 w-9 items-center justify-center rounded-full"
-          style={{ background: atLimit ? "rgba(255,255,255,0.08)" : POT_DIM }}
+          style={{ background: atLimit ? "rgba(17,24,39,0.06)" : POT_DIM }}
           title={atLimit ? "Max 10 pots reached" : "New pot"}
         >
-          <Plus className="h-5 w-5" style={{ color: atLimit ? "rgba(255,255,255,0.3)" : POT }} />
+          <Plus className="h-5 w-5" style={{ color: atLimit ? "rgba(17,24,39,0.3)" : POT }} />
         </button>
       }
     >
-      {/* Summary card */}
+      {/* Summary banner */}
       {pots.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[28px] p-5 mb-5 border border-white/8"
-          style={{ background: "linear-gradient(135deg,rgba(30,10,60,0.95),rgba(10,5,20,0.9))" }}
+          className="rounded-[12px] p-4 mb-5"
+          style={{ background: "#F0F4FF", border: "1px solid #DDE3F5" }}
         >
-          <div className="text-xs text-white/45 mb-1">Total saved across all pots</div>
-          <div className="text-3xl font-semibold tracking-tight mb-1">{formatAed(totalSaved)}</div>
-          <div className="text-xs mb-3" style={{ color: `${POT}99` }}>
-            of {formatAed(totalGoal)} goal · {overallPct.toFixed(0)}% there
+          <div className="text-xs mb-1" style={{ color: "#6B7280" }}>Total saved across all pots</div>
+          <div className="text-[28px] font-bold leading-tight mb-1" style={{ color: POT }}><DhAmt v={totalSaved} /></div>
+          <div className="text-xs mb-3" style={{ color: "#6B7280" }}>
+            of <DhAmt v={totalGoal} /> goal · {overallPct.toFixed(0)}% there
           </div>
-          <ProgressBar pct={overallPct} />
-          <div className="mt-3">
-            <div className="rounded-xl bg-white/8 px-3 py-2 inline-block">
-              <div className="text-xs text-white/45">Pots</div>
-              <div className="text-sm font-semibold">{pots.length} / {MAX_POTS}</div>
+          {/* Slim 6px progress bar */}
+          <div className="h-1.5 rounded-full overflow-hidden mb-3" style={{ background: "#DDE3F5" }}>
+            <motion.div
+              className="h-full rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${overallPct}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              style={{ background: POT }}
+            />
+          </div>
+          {/* Pots count pill */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 rounded-[6px] px-2.5 py-1" style={{ background: "#E8EDFB" }}>
+              <span className="text-[11px]" style={{ color: "#6B7280" }}>Pots</span>
+              <span className="text-[11px] font-bold" style={{ color: POT }}>{pots.length} / {MAX_POTS}</span>
             </div>
           </div>
         </motion.div>
@@ -509,34 +649,96 @@ function PotsHub({
         <div className="flex flex-col gap-3">
           {pots.map((pot, i) => {
             const pct = pctOf(pot.currentAmount, pot.targetAmount);
-            const remaining = pot.targetAmount - pot.currentAmount;
+            const remaining = Math.max(0, pot.targetAmount - pot.currentAmount);
+            const goalReached = pot.currentAmount >= pot.targetAmount;
             return (
-              <motion.button
+              <motion.div
                 key={pot.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => onSelectPot(pot.id)}
-                className="w-full text-left rounded-[22px] bg-[#0f1117] border border-white/8 p-4"
+                className="w-full rounded-[20px] p-5 cursor-pointer"
+                style={{ background: HERO_GRADIENT, boxShadow: "0 4px 16px rgba(26,79,219,0.25)" }}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-sm truncate">{pot.name}</div>
-                    <div className="text-xs text-white/40">{pct.toFixed(0)}% of goal</div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-sm font-semibold">{formatAed(pot.currentAmount)}</div>
-                    <div className="text-xs text-white/40">of {formatAed(pot.targetAmount)}</div>
-                  </div>
-                </div>
-                <ProgressBar pct={pct} />
-                {remaining > 0 && (
-                  <div className="text-xs text-white/30 mt-1.5">{formatAed(remaining)} remaining</div>
+                {goalReached ? (
+                  <>
+                    {/* Top row — name + celebration badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="font-bold text-base text-white">{pot.name}</div>
+                      <div className="flex items-center gap-1 rounded-full px-2 py-0.5" style={{ background: "rgba(255,255,255,0.2)" }}>
+                        <span className="text-xs">🎉</span>
+                        <span className="text-[11px] font-semibold text-white">Goal!</span>
+                      </div>
+                    </div>
+                    {/* Amount row — mirrors in-progress structure */}
+                    <div className="flex items-end gap-5 mb-4">
+                      <div>
+                        <div className="text-3xl font-bold text-white leading-none mb-1.5"><DhAmt v={pot.currentAmount} /></div>
+                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Saved</div>
+                      </div>
+                      <div className="mb-0.5">
+                        <div className="text-[22px] font-normal leading-none mb-1.5" style={{ color: "rgba(255,255,255,0.7)" }}><DhAmt v={pot.targetAmount} /></div>
+                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Goal</div>
+                      </div>
+                    </div>
+                    {/* Full progress bar */}
+                    <div className="h-2.5 rounded-full mb-2 overflow-hidden" style={{ background: "rgba(255,255,255,0.2)" }}>
+                      <div className="h-full w-full rounded-full" style={{ background: "rgba(255,255,255,0.9)" }} />
+                    </div>
+                    {/* Below bar — text action links */}
+                    <div className="flex justify-between items-center" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => onWithdrawPot(pot.id)}
+                        className="text-xs font-medium"
+                        style={{ color: "rgba(255,255,255,0.7)" }}
+                      >
+                        Withdraw
+                      </button>
+                      <button
+                        onClick={onNewPot}
+                        className="text-xs font-bold text-white"
+                      >
+                        New pot →
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Top row */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="font-bold text-base text-white">{pot.name}</div>
+                      <MoreHorizontal className="h-5 w-5" style={{ color: "rgba(255,255,255,0.5)" }} />
+                    </div>
+                    {/* Amount row */}
+                    <div className="flex items-end gap-5 mb-4">
+                      <div>
+                        <div className="text-3xl font-bold text-white leading-none mb-1.5"><DhAmt v={pot.currentAmount} /></div>
+                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Saved</div>
+                      </div>
+                      <div className="mb-0.5">
+                        <div className="text-[22px] font-normal leading-none mb-1.5" style={{ color: "rgba(255,255,255,0.7)" }}><DhAmt v={pot.targetAmount} /></div>
+                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Goal</div>
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-2.5 rounded-full mb-2 overflow-hidden" style={{ background: "rgba(255,255,255,0.2)" }}>
+                      <motion.div
+                        className="h-full rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        style={{ background: "rgba(255,255,255,0.9)" }}
+                      />
+                    </div>
+                    {/* Below bar */}
+                    <div className="flex justify-between items-center">
+                      <div className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>{pct.toFixed(0)}% saved</div>
+                      <div className="text-xs font-bold text-white"><DhAmt v={remaining} /> to go</div>
+                    </div>
+                  </>
                 )}
-                {remaining <= 0 && (
-                  <div className="text-xs mt-1.5 font-semibold" style={{ color: POT }}>Goal reached!</div>
-                )}
-              </motion.button>
+              </motion.div>
             );
           })}
         </div>
@@ -544,11 +746,11 @@ function PotsHub({
         /* Empty state */
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center text-center pt-16 pb-8 gap-4">
           <div className="text-5xl mb-2">🏺</div>
-          <div className="font-semibold text-lg">No pots yet</div>
-          <div className="text-sm text-white/45 max-w-[240px]">Create a pot to start saving toward a goal — Hajj, education, a new gadget, anything.</div>
+          <div className="font-semibold text-lg text-gray-900">No pots yet</div>
+          <div className="text-sm text-gray-500 max-w-[240px]">Create a pot to start saving toward a goal — Hajj, education, a new gadget, anything.</div>
           <button
             onClick={() => onNavigate("create-pot-1")}
-            className="mt-2 rounded-full px-6 py-3 text-sm font-semibold text-black"
+            className="mt-2 rounded-full px-6 py-3 text-sm font-semibold text-white"
             style={{ background: POT }}
           >
             Create your first pot
@@ -558,9 +760,9 @@ function PotsHub({
 
       {/* Max pots warning */}
       {atLimit && (
-        <div className="mt-4 rounded-[16px] border border-white/10 p-4 flex gap-3 items-start">
-          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-yellow-400" />
-          <div className="text-xs text-white/55">You've reached the maximum of 10 pots. Delete a pot to create a new one.</div>
+        <div className="mt-4 rounded-[16px] border border-gray-200 bg-white p-4 flex gap-3 items-start">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-yellow-500" />
+          <div className="text-xs text-gray-500">You've reached the maximum of 10 pots. Delete a pot to create a new one.</div>
         </div>
       )}
     </PageShell>
@@ -568,7 +770,7 @@ function PotsHub({
 }
 
 // ─── Create Pot — Step 1: Name ───────────────────────────────────────────────
-const NAME_ALLOWED = /^[a-zA-Z0-9\u0600-\u06FF\s]*$/;
+const NAME_ALLOWED = /^[a-zA-Z0-9؀-ۿ\s]*$/;
 const NAME_MAX = 32;
 
 function CreatePot1({
@@ -591,34 +793,33 @@ function CreatePot1({
       subtitle="POTS"
       badge="POTS"
       navCurrent="money"
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 pt-2">
         {/* Step indicator */}
         <div className="flex items-center gap-2">
           {[1, 2, 3].map((s) => (
-            <div key={s} className="h-1 flex-1 rounded-full" style={{ background: s === 1 ? POT : "rgba(255,255,255,0.12)" }} />
+            <div key={s} className="h-1 flex-1 rounded-full" style={{ background: s === 1 ? POT : "rgba(17,24,39,0.1)" }} />
           ))}
         </div>
-        <div className="text-xs text-white/40">Step 1 of 3</div>
+        <div className="text-xs text-gray-400">Step 1 of 3</div>
 
         <div>
-          <div className="text-xl font-semibold mb-1">Name your pot</div>
-          <div className="text-sm text-white/45">Give it a name that matches your goal.</div>
+          <div className="text-xl font-semibold mb-1 text-gray-900">Name your pot</div>
+          <div className="text-sm text-gray-500">Give it a name that matches your goal.</div>
         </div>
 
         <div
-          className="rounded-[20px] bg-[#0f1117] border px-4 py-3 transition"
-          style={{ borderColor: hasSpecial ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+          className="rounded-[20px] bg-white border px-4 py-3 transition"
+          style={{ borderColor: hasSpecial ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
         >
           <div className="flex justify-between items-center mb-1">
-            <div className="text-xs text-white/45">Pot name</div>
-            <div className="text-xs" style={{ color: name.length >= NAME_MAX ? "rgb(248,113,113)" : "rgba(255,255,255,0.3)" }}>
+            <div className="text-xs text-gray-500">Pot name</div>
+            <div className="text-xs" style={{ color: name.length >= NAME_MAX ? "rgb(248,113,113)" : "rgba(17,24,39,0.3)" }}>
               {name.length}/{NAME_MAX}
             </div>
           </div>
           <input
-            className="w-full bg-transparent text-white text-base outline-none placeholder-white/25"
+            className="w-full bg-transparent text-gray-900 text-base outline-none placeholder-gray-300"
             placeholder="e.g. Hajj 2026, MacBook, Emergency"
             value={name}
             onChange={(e) => handleChange(e.target.value)}
@@ -633,7 +834,7 @@ function CreatePot1({
           onClick={() => isValid && onNext(name.trim())}
           disabled={!isValid}
           className="rounded-full py-4 text-sm font-semibold transition"
-          style={{ background: isValid ? POT : "rgba(255,255,255,0.1)", color: isValid ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: isValid ? POT : "rgba(17,24,39,0.08)", color: isValid ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
           Continue
         </button>
@@ -648,10 +849,30 @@ function CreatePot2({
 }: {
   potName: string;
   onBack: () => void;
-  onNext: (target: number) => void;
+  onNext: (target: number, targetDate?: string) => void;
 }) {
+  const TARGET_MIN = 100;
+  const TARGET_MAX = 100_000;
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const [raw, setRaw] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const amount = parseFloat(raw) || 0;
+  const isBelowMin = amount > 0 && amount < TARGET_MIN;
+  const isAboveMax = amount > TARGET_MAX;
+  const hasError = isBelowMin || isAboveMax;
+  const isValid = amount >= TARGET_MIN && amount <= TARGET_MAX;
+
+  const dateIsPast = targetDate ? targetDate < todayStr : false;
+
+  const dateLabel = useMemo(() => {
+    if (!targetDate || dateIsPast) return null;
+    const days = Math.round((new Date(targetDate).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24));
+    if (days === 0) return "Today";
+    if (days < 30) return `${days} day${days !== 1 ? "s" : ""} away`;
+    const months = Math.round(days / 30.44);
+    return `${months} month${months !== 1 ? "s" : ""} away`;
+  }, [targetDate, dateIsPast, todayStr]);
 
   function handleInput(v: string) {
     if (/^\d*\.?\d{0,2}$/.test(v)) setRaw(v);
@@ -663,52 +884,62 @@ function CreatePot2({
       subtitle="POTS"
       badge="POTS"
       navCurrent="money"
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 pt-2">
         {/* Step indicator */}
         <div className="flex items-center gap-2">
           {[1, 2, 3].map((s) => (
-            <div key={s} className="h-1 flex-1 rounded-full" style={{ background: s <= 2 ? POT : "rgba(255,255,255,0.12)" }} />
+            <div key={s} className="h-1 flex-1 rounded-full" style={{ background: s <= 2 ? POT : "rgba(17,24,39,0.1)" }} />
           ))}
         </div>
-        <div className="text-xs text-white/40">Step 2 of 3</div>
+        <div className="text-xs text-gray-400">Step 2 of 3</div>
 
-        <div className="font-semibold">{potName}</div>
+        <div className="font-semibold text-gray-900">{potName}</div>
 
         <div>
-          <div className="text-xl font-semibold mb-1">Set a savings goal</div>
-          <div className="text-sm text-white/45">How much do you want to save?</div>
+          <div className="text-xl font-semibold mb-1 text-gray-900">Set a savings goal</div>
+          <div className="text-sm text-gray-500">How much do you want to save?</div>
         </div>
 
         {/* Amount input */}
-        <div className="rounded-[24px] bg-[#0f1117] border border-white/8 px-5 py-6 flex flex-col items-center gap-2">
-          <div className="text-xs text-white/45 mb-1">Target amount</div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-white/40">AED</span>
+        <div
+          className="rounded-[24px] bg-white border px-5 py-5 flex flex-col gap-1.5 transition"
+          style={{ borderColor: hasError ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
+        >
+          <div className="text-xs text-gray-500">Target amount</div>
+          <div className="flex items-baseline gap-2">
+            <DirhemSign className="h-8 w-auto text-gray-400 shrink-0" />
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
-              placeholder="0"
+              className="bg-transparent text-4xl font-semibold text-gray-900 outline-none flex-1 min-w-0"
+              placeholder="0.00"
               value={raw}
               onChange={(e) => handleInput(e.target.value)}
               autoFocus
             />
           </div>
-          <div className="text-xs text-white/30">Enter the total amount you want to reach</div>
+          {isBelowMin && (
+            <div className="text-xs text-red-400 flex items-center gap-1">Minimum target is <DhAmt v={TARGET_MIN} /></div>
+          )}
+          {isAboveMax && (
+            <div className="text-xs text-red-400 flex items-center gap-1">Maximum target is <DhAmt v={TARGET_MAX} /></div>
+          )}
+          {!hasError && amount === 0 && (
+            <div className="text-xs text-gray-400 flex items-center gap-1">Between <DhAmt v={TARGET_MIN} /> and <DhAmt v={TARGET_MAX} /></div>
+          )}
         </div>
 
         {/* Quick suggestions */}
-        <div className="flex gap-2 flex-wrap">
-          {[500, 1000, 2500, 5000, 10000].map((v) => (
+        <div className="grid grid-cols-5 gap-2">
+          {[1000, 2500, 5000, 10000, 25000].map((v) => (
             <button
               key={v}
               onClick={() => setRaw(String(v))}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold"
+              className="rounded-full py-1.5 text-xs font-semibold"
               style={{
-                background: amount === v ? POT_DIM : "rgba(255,255,255,0.07)",
-                color: amount === v ? POT : "rgba(255,255,255,0.55)",
+                background: amount === v ? POT_DIM : "rgba(17,24,39,0.06)",
+                color: amount === v ? POT : "rgba(17,24,39,0.55)",
                 border: amount === v ? `1px solid ${POT}44` : "1px solid transparent",
               }}
             >
@@ -717,11 +948,33 @@ function CreatePot2({
           ))}
         </div>
 
+        {/* Target date (optional) */}
+        <div className="rounded-[20px] bg-white border border-gray-100 px-4 py-3.5 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500">Target date</div>
+            <div className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">optional</div>
+          </div>
+          <input
+            type="date"
+            min={todayStr}
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+            className="bg-transparent text-sm font-semibold text-gray-900 outline-none w-full"
+            style={{ colorScheme: "light" }}
+          />
+          {dateIsPast && (
+            <div className="text-xs text-red-400">Date must be in the future</div>
+          )}
+          {dateLabel && (
+            <div className="text-xs text-gray-400">{dateLabel}</div>
+          )}
+        </div>
+
         <button
-          onClick={() => amount > 0 && onNext(amount)}
-          disabled={amount <= 0}
+          onClick={() => isValid && !dateIsPast && onNext(amount, targetDate || undefined)}
+          disabled={!isValid || dateIsPast}
           className="rounded-full py-4 text-sm font-semibold transition"
-          style={{ background: amount > 0 ? POT : "rgba(255,255,255,0.1)", color: amount > 0 ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: isValid ? POT : "rgba(17,24,39,0.08)", color: isValid ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
           Continue
         </button>
@@ -755,7 +1008,6 @@ function CreatePot3({
       subtitle="POTS"
       badge="POTS"
       navCurrent="money"
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6 pt-2">
         {/* Step indicator */}
@@ -764,38 +1016,38 @@ function CreatePot3({
             <div key={s} className="h-1 flex-1 rounded-full" style={{ background: POT }} />
           ))}
         </div>
-        <div className="text-xs text-white/40">Step 3 of 3</div>
+        <div className="text-xs text-gray-400">Step 3 of 3</div>
 
         {/* Pot preview */}
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{potName}</span>
-          <span className="text-white/40">·</span>
-          <span className="text-sm text-white/45">goal {formatAed(targetAmount)}</span>
+          <span className="font-semibold text-gray-900">{potName}</span>
+          <span className="text-gray-400">·</span>
+          <span className="text-sm text-gray-500">goal <DhAmt v={targetAmount} /></span>
         </div>
 
         <div>
-          <div className="text-xl font-semibold mb-1">Add a starting amount</div>
-          <div className="text-sm text-white/45">Move money from your wallet into this pot.</div>
+          <div className="text-xl font-semibold mb-1 text-gray-900">Add a starting amount</div>
+          <div className="text-sm text-gray-500">Move money from your wallet into this pot.</div>
         </div>
 
         {/* Available balance */}
-        <div className="rounded-[18px] border border-white/8 px-4 py-3 flex items-center justify-between">
-          <div className="text-sm text-white/55">Available to move</div>
-          <div className="text-sm font-semibold">{formatAed(spendable)}</div>
+        <div className="rounded-[18px] border border-gray-100 bg-white px-4 py-3 flex items-center justify-between">
+          <div className="text-sm text-gray-500">Available to move</div>
+          <div className="text-sm font-semibold text-gray-900"><DhAmt v={spendable} /></div>
         </div>
 
         {/* Amount input */}
         <div
-          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2 transition"
-          style={{ borderColor: isOverLimit ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+          className="rounded-[24px] bg-white border px-5 py-6 flex flex-col items-center gap-2 transition"
+          style={{ borderColor: isOverLimit ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
         >
-          <div className="text-xs text-white/45 mb-1">Deposit amount</div>
+          <div className="text-xs text-gray-500 mb-1">Deposit amount</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-white/40">AED</span>
+            <DirhemSign className="h-8 w-auto text-gray-400 shrink-0" />
             <input
               type="number"
               inputMode="decimal"
-              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
+              className="bg-transparent text-4xl font-semibold text-gray-900 outline-none w-[160px] text-center"
               placeholder="0"
               value={raw}
               onChange={(e) => handleInput(e.target.value)}
@@ -812,13 +1064,13 @@ function CreatePot3({
             onClick={() => isValid && onCreate(amount)}
             disabled={!isValid}
             className="rounded-full py-4 text-sm font-semibold transition"
-            style={{ background: isValid ? POT : "rgba(255,255,255,0.1)", color: isValid ? "#000" : "rgba(255,255,255,0.3)" }}
+            style={{ background: isValid ? POT : "rgba(17,24,39,0.08)", color: isValid ? "#fff" : "rgba(17,24,39,0.3)" }}
           >
             Create pot
           </button>
           <button
             onClick={() => onCreate(0)}
-            className="rounded-full py-3 text-sm text-white/45 font-medium"
+            className="rounded-full py-3 text-sm text-gray-400 font-medium"
           >
             Skip for now
           </button>
@@ -837,7 +1089,7 @@ function CreatePotSuccess({
   onDone: () => void;
 }) {
   return (
-    <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
+    <div className={phone} style={{ background: "#f5f5f5" }}>
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -850,14 +1102,14 @@ function CreatePotSuccess({
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <div className="text-2xl font-bold mb-2">Pot created!</div>
-          <div className="text-lg font-semibold mb-3">{potName}</div>
+          <div className="text-2xl font-bold mb-2 text-gray-900">Pot created!</div>
+          <div className="text-lg font-semibold mb-3 text-gray-900">{potName}</div>
           {depositAmount > 0 ? (
-            <div className="text-sm text-white/55">
-              <span style={{ color: POT }} className="font-semibold">{formatAed(depositAmount)}</span> moved to your pot
+            <div className="text-sm text-gray-500">
+              <span style={{ color: POT }} className="font-semibold"><DhAmt v={depositAmount} /></span> moved to your pot
             </div>
           ) : (
-            <div className="text-sm text-white/55">Your pot is ready. Add money whenever you like.</div>
+            <div className="text-sm text-gray-500">Your pot is ready. Add money whenever you like.</div>
           )}
         </motion.div>
 
@@ -866,7 +1118,7 @@ function CreatePotSuccess({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           onClick={onDone}
-          className="rounded-full px-8 py-4 text-sm font-semibold text-black"
+          className="rounded-full px-8 py-4 text-sm font-semibold text-white"
           style={{ background: POT }}
         >
           View my pots
@@ -889,7 +1141,8 @@ function PotDetail({
   onTransfer: () => void;
   onDeleteConfirm: () => void;
 }) {
-  const pct = pctOf(pot.currentAmount, pot.targetAmount);
+  const pct = pctOf(pot.currentAmount, pot.targetAmount); // capped at 100 — for progress bar only
+  const rawPct = pot.targetAmount > 0 ? (pot.currentAmount / pot.targetAmount) * 100 : 0;
   const remaining = Math.max(0, pot.targetAmount - pot.currentAmount);
   const goalReached = pot.currentAmount >= pot.targetAmount;
 
@@ -899,44 +1152,49 @@ function PotDetail({
       subtitle="POTS"
       badge="POTS"
       navCurrent="money"
-      gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)"
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5">
         {/* Hero card */}
         <div
-          className="rounded-[28px] p-6 border border-white/8 text-center"
-          style={{ background: "linear-gradient(135deg,rgba(30,10,60,0.95),rgba(10,5,20,0.9))" }}
+          className="rounded-[28px] p-6 text-center"
+          style={{ background: HERO_GRADIENT }}
         >
-          <div className="text-xl font-semibold mb-4">{pot.name}</div>
-          <div className="text-xs text-white/40 mb-1">Saved</div>
-          <div className="text-4xl font-semibold tracking-tight mb-4">{formatAed(pot.currentAmount)}</div>
+          <div className="text-xl font-semibold mb-4 text-white">{pot.name}</div>
+          <div className="text-xs text-white/60 mb-1">Saved</div>
+          <div className="text-4xl font-semibold tracking-tight mb-4 text-white"><DhAmt v={pot.currentAmount} /></div>
 
-          <ProgressBar pct={pct} />
-          <div className="flex justify-between text-xs text-white/35 mt-1.5">
-            <span>{pct.toFixed(0)}% saved</span>
-            <span>Goal: {formatAed(pot.targetAmount)}</span>
+          <ProgressBar pct={pct} color="rgba(255,255,255,0.85)" />
+          <div className="flex justify-between text-xs text-white/50 mt-1.5">
+            <span>{rawPct.toFixed(0)}% saved</span>
+            <span>Goal: <DhAmt v={pot.targetAmount} /></span>
           </div>
 
           {goalReached ? (
-            <div className="mt-3 rounded-full px-3 py-1 text-xs font-semibold inline-block" style={{ background: POT_DIM, color: POT }}>
+            <div className="mt-3 rounded-full px-3 py-1 text-xs font-semibold inline-block bg-white/20 text-white">
               Goal reached!
             </div>
           ) : (
-            <div className="mt-3 text-sm text-white/45">{formatAed(remaining)} to go</div>
+            <div className="mt-3 text-sm text-white/60"><DhAmt v={remaining} /> to go</div>
           )}
         </div>
 
         {/* Stats */}
-        <div className="rounded-[20px] bg-[#0f1117] border border-white/8 divide-y divide-white/8">
+        <div className="rounded-[20px] bg-white border border-gray-100 divide-y divide-gray-100">
           {[
-            { label: "Saved so far", value: formatAed(pot.currentAmount) },
-            { label: "Goal", value: formatAed(pot.targetAmount) },
-            { label: "Remaining", value: formatAed(remaining) },
-            { label: "Progress", value: `${pct.toFixed(1)}%` },
+            { label: "Saved so far", value: <DhAmt v={pot.currentAmount} /> },
+            { label: "Goal", value: <DhAmt v={pot.targetAmount} /> },
+            { label: "Remaining", value: <DhAmt v={remaining} /> },
+            { label: "Progress", value: `${rawPct.toFixed(1)}%` },
+            {
+              label: "Target date",
+              value: pot.targetDate
+                ? new Date(pot.targetDate).toLocaleDateString("en-AE", { day: "numeric", month: "short", year: "numeric" })
+                : <span className="text-gray-400 italic">Indefinite</span>,
+            },
           ].map(({ label, value }) => (
             <div key={label} className="flex items-center justify-between px-4 py-3">
-              <div className="text-sm text-white/55">{label}</div>
-              <div className="text-sm font-semibold">{value}</div>
+              <div className="text-sm text-gray-500">{label}</div>
+              <div className="text-sm font-semibold text-gray-900">{value}</div>
             </div>
           ))}
         </div>
@@ -945,9 +1203,8 @@ function PotDetail({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={onAddMoney}
-            disabled={goalReached}
-            className="rounded-full py-4 text-sm font-semibold"
-            style={{ background: goalReached ? "rgba(255,255,255,0.1)" : POT, color: goalReached ? "rgba(255,255,255,0.3)" : "#000" }}
+            className="rounded-full py-4 text-sm font-semibold text-white"
+            style={{ background: POT }}
           >
             Add money
           </button>
@@ -956,8 +1213,8 @@ function PotDetail({
             disabled={pot.currentAmount <= 0}
             className="rounded-full py-4 text-sm font-semibold border"
             style={{
-              borderColor: pot.currentAmount > 0 ? `${POT}55` : "rgba(255,255,255,0.1)",
-              color: pot.currentAmount > 0 ? POT : "rgba(255,255,255,0.3)",
+              borderColor: pot.currentAmount > 0 ? `${POT}55` : "rgba(17,24,39,0.1)",
+              color: pot.currentAmount > 0 ? POT : "rgba(17,24,39,0.3)",
             }}
           >
             Withdraw
@@ -968,11 +1225,10 @@ function PotDetail({
         {otherPotsExist && (
           <button
             onClick={onTransfer}
-            disabled={goalReached}
             className="rounded-full py-4 text-sm font-semibold border w-full"
             style={{
-              borderColor: goalReached ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.12)",
-              color: goalReached ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)",
+              borderColor: "rgba(17,24,39,0.15)",
+              color: "rgba(17,24,39,0.7)",
             }}
           >
             Transfer from another pot
@@ -1010,22 +1266,22 @@ function PotAddMoney({
   const goalReached = remaining === 0;
 
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="font-semibold">{pot.name}</div>
-        <div className="text-xl font-semibold">Add money to pot</div>
+        <div className="font-semibold text-gray-900">{pot.name}</div>
+        <div className="text-xl font-semibold text-gray-900">Add money to pot</div>
 
         <div
-          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2 transition"
-          style={{ borderColor: isOverMonthlyLimit ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+          className="rounded-[24px] bg-white border px-5 py-6 flex flex-col items-center gap-2 transition"
+          style={{ borderColor: isOverMonthlyLimit ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
         >
-          <div className="text-xs text-white/45 mb-1">Amount</div>
+          <div className="text-xs text-gray-500 mb-1">Amount</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-white/40">AED</span>
+            <DirhemSign className="h-8 w-auto text-gray-400 shrink-0" />
             <input
               type="number"
               inputMode="decimal"
-              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
+              className="bg-transparent text-4xl font-semibold text-gray-900 outline-none w-[160px] text-center"
               placeholder="0"
               value={raw}
               onChange={(e) => { if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setRaw(e.target.value); }}
@@ -1034,7 +1290,7 @@ function PotAddMoney({
           </div>
           {isOverMonthlyLimit && (
             <div className="text-xs text-red-400 mt-1">
-              Monthly limit reached — you can deposit up to {formatAed(Math.max(0, monthlyRemaining))} this month
+              Monthly limit reached — you can deposit up to <DhAmt v={Math.max(0, monthlyRemaining)} /> this month
             </div>
           )}
         </div>
@@ -1043,13 +1299,13 @@ function PotAddMoney({
         {!goalReached ? (
           <button
             onClick={() => setRaw(String(remaining))}
-            className="rounded-[18px] border border-white/8 px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-110"
-            style={{ background: amount === remaining ? POT_DIM : "#0f1117", borderColor: amount === remaining ? `${POT}44` : "rgba(255,255,255,0.08)" }}
+            className="rounded-[18px] border px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-98 bg-white"
+            style={{ borderColor: amount === remaining ? `${POT}44` : "rgba(17,24,39,0.1)", background: amount === remaining ? POT_DIM : "#ffffff" }}
           >
             <div>
-              <div className="text-xs text-white/45">To reach your goal</div>
-              <div className="text-sm font-semibold mt-0.5" style={{ color: amount === remaining ? POT : "white" }}>
-                {formatAed(remaining)} needed
+              <div className="text-xs text-gray-500">To reach your goal</div>
+              <div className="text-sm font-semibold mt-0.5" style={{ color: amount === remaining ? POT : "#111827" }}>
+                <DhAmt v={remaining} /> needed
               </div>
             </div>
             <div className="text-xs rounded-full px-3 py-1 font-semibold" style={{ background: POT_DIM, color: POT }}>
@@ -1057,9 +1313,9 @@ function PotAddMoney({
             </div>
           </button>
         ) : (
-          <div className="rounded-[18px] border border-white/8 px-4 py-3.5 flex items-center gap-3">
+          <div className="rounded-[18px] border border-gray-100 bg-white px-4 py-3.5 flex items-center gap-3">
             <Check className="h-4 w-4 shrink-0" style={{ color: POT }} />
-            <div className="text-sm text-white/55">You've already hit your goal — any extra goes beyond it.</div>
+            <div className="text-sm text-gray-500">You've already hit your goal — any extra goes beyond it.</div>
           </div>
         )}
 
@@ -1067,7 +1323,7 @@ function PotAddMoney({
           onClick={() => canContinue && onNext(amount)}
           disabled={!canContinue}
           className="rounded-full py-4 text-sm font-semibold"
-          style={{ background: canContinue ? POT : "rgba(255,255,255,0.1)", color: canContinue ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: canContinue ? POT : "rgba(17,24,39,0.08)", color: canContinue ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
           Choose payment method
         </button>
@@ -1092,11 +1348,11 @@ function PotPaymentMethod({
   const [selected, setSelected] = useState<PayMethod | null>(null);
   const walletOk = spendable >= amount;
 
-  const methods: { id: PayMethod; label: string; sub: string; icon: React.ReactNode; disabled?: boolean; badge?: string }[] = [
+  const methods: { id: PayMethod; label: string; sub: React.ReactNode; icon: React.ReactNode; disabled?: boolean; badge?: string }[] = [
     {
       id: "wallet",
       label: "Botim Wallet",
-      sub: walletOk ? `Balance: ${formatAed(spendable)}` : `Need ${formatAed(amount - spendable)} more`,
+      sub: walletOk ? <><DhAmt v={spendable} /> balance</> : <>Need <DhAmt v={amount - spendable} /> more</>,
       icon: <Wallet className="h-5 w-5" />,
       disabled: !walletOk,
       badge: walletOk ? undefined : "Insufficient",
@@ -1122,17 +1378,17 @@ function PotPaymentMethod({
   function handleConfirm() {
     if (!selected) return;
     if (selected === "wallet") { onWallet(); return; }
-    onCard(); // debit + applepay both go to CVV / processing
+    onCard();
   }
 
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="font-semibold">{pot.name}</div>
+        <div className="font-semibold text-gray-900">{pot.name}</div>
 
         <div>
-          <div className="text-xl font-semibold mb-1">How would you like to pay?</div>
-          <div className="text-sm text-white/45">{formatAed(amount)} into your pot</div>
+          <div className="text-xl font-semibold mb-1 text-gray-900">How would you like to pay?</div>
+          <div className="text-sm text-gray-500"><DhAmt v={amount} /> into your pot</div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -1145,29 +1401,29 @@ function PotPaymentMethod({
                 disabled={m.disabled}
                 className="w-full rounded-[22px] border p-5 text-left transition"
                 style={{
-                  borderColor: isSelected ? POT : "rgba(255,255,255,0.08)",
-                  background: isSelected ? POT_DIM : "#0f1117",
+                  borderColor: isSelected ? POT : "rgba(17,24,39,0.1)",
+                  background: isSelected ? POT_DIM : "#ffffff",
                   opacity: m.disabled ? 0.45 : 1,
                 }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="rounded-full p-2.5"
-                      style={{ background: isSelected ? `${POT}22` : "rgba(255,255,255,0.07)", color: isSelected ? POT : "rgba(255,255,255,0.7)" }}>
+                      style={{ background: isSelected ? `${POT}22` : "rgba(17,24,39,0.06)", color: isSelected ? POT : "rgba(17,24,39,0.6)" }}>
                       {m.icon}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold flex items-center gap-2">
+                      <div className="text-sm font-semibold flex items-center gap-2 text-gray-900">
                         {m.label}
                         {m.badge && (
                           <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">{m.badge}</span>
                         )}
                       </div>
-                      <div className="text-xs text-white/40 mt-0.5">{m.sub}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{m.sub}</div>
                     </div>
                   </div>
                   <div className="h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                    style={{ borderColor: isSelected ? POT : "rgba(255,255,255,0.2)" }}>
+                    style={{ borderColor: isSelected ? POT : "rgba(17,24,39,0.2)" }}>
                     {isSelected && <div className="h-2.5 w-2.5 rounded-full" style={{ background: POT }} />}
                   </div>
                 </div>
@@ -1180,7 +1436,7 @@ function PotPaymentMethod({
           disabled={!selected}
           onClick={handleConfirm}
           className="rounded-full py-4 text-sm font-semibold transition disabled:opacity-30"
-          style={{ background: selected ? POT : "rgba(255,255,255,0.1)", color: selected ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: selected ? POT : "rgba(17,24,39,0.08)", color: selected ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
           {selected === "debit" ? "Enter CVV" : selected === "applepay" ? "Pay with Apple Pay" : selected === "wallet" ? "Confirm deposit" : "Continue"}
         </button>
@@ -1209,20 +1465,20 @@ function PotCardCvv({
   }
 
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
         <div className="flex items-center gap-3">
-          <div className="rounded-full bg-white/8 p-3">
-            <CreditCard className="h-6 w-6 text-white/70" />
+          <div className="rounded-full bg-gray-100 p-3">
+            <CreditCard className="h-6 w-6 text-gray-500" />
           </div>
           <div>
-            <div className="text-lg font-semibold">Visa •••• 4782</div>
-            <div className="text-sm text-white/45">Confirm {formatAed(amount)} into {pot.name}</div>
+            <div className="text-lg font-semibold text-gray-900">Visa •••• 4782</div>
+            <div className="text-sm text-gray-500">Confirm <DhAmt v={amount} /> into {pot.name}</div>
           </div>
         </div>
 
-        <div className="rounded-[28px] bg-[#0f1117] p-6">
-          <div className="mb-2 text-xs text-white/45 uppercase tracking-wider">CVV</div>
+        <div className="rounded-[28px] bg-white border border-gray-100 p-6">
+          <div className="mb-2 text-xs text-gray-500 uppercase tracking-wider">CVV</div>
           <input
             type="password"
             inputMode="numeric"
@@ -1230,10 +1486,10 @@ function PotCardCvv({
             value={cvv}
             onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 3))}
             placeholder="•••"
-            className="w-full bg-transparent text-4xl font-semibold tracking-[0.5em] outline-none placeholder-white/15 text-white"
+            className="w-full bg-transparent text-4xl font-semibold tracking-[0.5em] outline-none placeholder-gray-200 text-gray-900"
             autoFocus
           />
-          <div className="mt-3 text-xs text-white/35">3-digit code on the back of your card</div>
+          <div className="mt-3 text-xs text-gray-400">3-digit code on the back of your card</div>
         </div>
 
         {/* Card visual */}
@@ -1243,7 +1499,7 @@ function PotCardCvv({
             <div className="self-end flex flex-col items-end">
               <div className="text-[10px] text-white/35 mb-0.5">CVV</div>
               <div className="rounded-md border px-3 py-1 text-xs font-mono"
-                style={{ borderColor: valid ? POT : "rgba(255,255,255,0.2)", color: valid ? POT : "rgba(255,255,255,0.4)" }}>
+                style={{ borderColor: valid ? POT : "rgba(255,255,255,0.2)", color: valid ? "#93c5fd" : "rgba(255,255,255,0.4)" }}>
                 {cvv.length > 0 ? "•".repeat(cvv.length) : "•••"}
               </div>
             </div>
@@ -1254,9 +1510,9 @@ function PotCardCvv({
           disabled={!valid || loading}
           onClick={handlePay}
           className="rounded-full py-4 text-sm font-semibold transition disabled:opacity-30"
-          style={{ background: valid ? POT : "rgba(255,255,255,0.1)", color: valid ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: valid ? POT : "rgba(17,24,39,0.08)", color: valid ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
-          {loading ? "Processing…" : `Pay ${formatAed(amount)}`}
+          {loading ? "Processing…" : <>Pay <DhAmt v={amount} /></>}
         </button>
       </motion.div>
     </PageShell>
@@ -1275,7 +1531,7 @@ function PotDepositSuccess({
   const methodLabel = payMethod === "debit" ? "Visa •••• 4782" : payMethod === "applepay" ? "Apple Pay" : "Botim Wallet";
 
   return (
-    <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
+    <div className={phone} style={{ background: "#f5f5f5" }}>
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -1288,21 +1544,21 @@ function PotDepositSuccess({
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full">
-          <div className="text-2xl font-bold mb-1">Deposit successful!</div>
-          <div className="text-sm text-white/45 mb-6">
-            <span style={{ color: POT }} className="font-semibold">{formatAed(amount)}</span> added to {pot.name}
+          <div className="text-2xl font-bold mb-1 text-gray-900">Deposit successful!</div>
+          <div className="text-sm text-gray-500 mb-6">
+            <span style={{ color: POT }} className="font-semibold"><DhAmt v={amount} /></span> added to {pot.name}
           </div>
 
-          <div className="rounded-[24px] bg-[#0f1117] divide-y divide-white/8 text-left mb-6">
+          <div className="rounded-[24px] bg-white border border-gray-100 divide-y divide-gray-100 text-left mb-6">
             {[
-              { label: "Pot",    value: pot.name },
-              { label: "Amount", value: formatAed(amount) },
-              { label: "Paid via", value: methodLabel },
-              { label: "New pot balance", value: formatAed(pot.currentAmount) },
+              { label: "Pot",             value: pot.name },
+              { label: "Amount",          value: <DhAmt v={amount} /> },
+              { label: "Paid via",        value: methodLabel },
+              { label: "New pot balance", value: <DhAmt v={pot.currentAmount} /> },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between px-5 py-3.5">
-                <span className="text-sm text-white/50">{label}</span>
-                <span className="text-sm font-semibold">{value}</span>
+                <span className="text-sm text-gray-500">{label}</span>
+                <span className="text-sm font-semibold text-gray-900">{value}</span>
               </div>
             ))}
           </div>
@@ -1313,7 +1569,7 @@ function PotDepositSuccess({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           onClick={onDone}
-          className="w-full rounded-full py-4 text-sm font-semibold text-black"
+          className="w-full rounded-full py-4 text-sm font-semibold text-white"
           style={{ background: POT }}
         >
           Back to pot
@@ -1337,27 +1593,27 @@ function PotWithdraw({
   const isOver = amount > pot.currentAmount;
 
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
-        <div className="font-semibold">{pot.name}</div>
-        <div className="text-xl font-semibold">Withdraw from pot</div>
+        <div className="font-semibold text-gray-900">{pot.name}</div>
+        <div className="text-xl font-semibold text-gray-900">Withdraw from pot</div>
 
-        <div className="rounded-[18px] border border-white/8 px-4 py-3 flex justify-between items-center">
-          <div className="text-sm text-white/55">Available in pot</div>
-          <div className="text-sm font-semibold">{formatAed(pot.currentAmount)}</div>
+        <div className="rounded-[18px] border border-gray-100 bg-white px-4 py-3 flex justify-between items-center">
+          <div className="text-sm text-gray-500">Available in pot</div>
+          <div className="text-sm font-semibold text-gray-900"><DhAmt v={pot.currentAmount} /></div>
         </div>
 
         <div
-          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2"
-          style={{ borderColor: isOver ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+          className="rounded-[24px] bg-white border px-5 py-6 flex flex-col items-center gap-2"
+          style={{ borderColor: isOver ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
         >
-          <div className="text-xs text-white/45 mb-1">Amount</div>
+          <div className="text-xs text-gray-500 mb-1">Amount</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-white/40">AED</span>
+            <DirhemSign className="h-8 w-auto text-gray-400 shrink-0" />
             <input
               type="number"
               inputMode="decimal"
-              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
+              className="bg-transparent text-4xl font-semibold text-gray-900 outline-none w-[160px] text-center"
               placeholder="0"
               value={raw}
               onChange={(e) => { if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setRaw(e.target.value); }}
@@ -1372,16 +1628,16 @@ function PotWithdraw({
             const v = Math.floor((pot.currentAmount * pct) / 100 * 100) / 100;
             return (
               <button key={pct} onClick={() => setRaw(String(v))} className="flex-1 rounded-full py-2 text-xs font-semibold"
-                style={{ background: amount === v ? POT_DIM : "rgba(255,255,255,0.07)", color: amount === v ? POT : "rgba(255,255,255,0.55)", border: amount === v ? `1px solid ${POT}44` : "1px solid transparent" }}>
+                style={{ background: amount === v ? POT_DIM : "rgba(17,24,39,0.06)", color: amount === v ? POT : "rgba(17,24,39,0.55)", border: amount === v ? `1px solid ${POT}44` : "1px solid transparent" }}>
                 {pct}%
               </button>
             );
           })}
         </div>
 
-        <div className="rounded-[16px] border border-white/8 p-3 flex gap-2 items-start">
-          <Target className="h-4 w-4 mt-0.5 text-white/35 flex-shrink-0" />
-          <div className="text-xs text-white/45">Withdrawn funds go back to your spendable wallet balance.</div>
+        <div className="rounded-[16px] border border-gray-100 bg-white p-3 flex gap-2 items-start">
+          <Target className="h-4 w-4 mt-0.5 text-gray-400 flex-shrink-0" />
+          <div className="text-xs text-gray-500">Withdrawn funds go back to your spendable wallet balance.</div>
         </div>
 
         <button
@@ -1389,11 +1645,11 @@ function PotWithdraw({
           disabled={!isValid}
           className="rounded-full py-4 text-sm font-semibold border"
           style={{
-            borderColor: isValid ? `${POT}55` : "rgba(255,255,255,0.1)",
-            color: isValid ? POT : "rgba(255,255,255,0.3)",
+            borderColor: isValid ? `${POT}55` : "rgba(17,24,39,0.1)",
+            color: isValid ? POT : "rgba(17,24,39,0.3)",
           }}
         >
-          Withdraw {amount > 0 && isValid ? formatAed(amount) : ""}
+          Withdraw {amount > 0 && isValid ? <DhAmt v={amount} /> : null}
         </button>
       </motion.div>
     </PageShell>
@@ -1409,17 +1665,17 @@ function DeleteConfirm({
   onDelete: () => void;
 }) {
   return (
-    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-8">
         <div className="flex flex-col items-center text-center gap-4 py-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
             <Trash2 className="h-7 w-7 text-red-400" />
           </div>
           <div>
-            <div className="text-xl font-semibold mb-2">Delete {pot.name}?</div>
-            <div className="text-sm text-white/55 max-w-[260px] mx-auto">
+            <div className="text-xl font-semibold mb-2 text-gray-900">Delete {pot.name}?</div>
+            <div className="text-sm text-gray-500 max-w-[260px] mx-auto">
               {pot.currentAmount > 0
-                ? <><span className="text-white font-semibold">{formatAed(pot.currentAmount)}</span> will be returned to your spendable wallet balance.</>
+                ? <><span className="text-gray-900 font-semibold"><DhAmt v={pot.currentAmount} /></span> will be returned to your spendable wallet balance.</>
                 : "This pot is empty and will be permanently deleted."}
             </div>
           </div>
@@ -1427,21 +1683,21 @@ function DeleteConfirm({
 
         {pot.currentAmount > 0 && (
           <div className="rounded-[18px] border border-red-500/20 bg-red-500/8 p-4 flex gap-3">
-            <AlertTriangle className="h-4 w-4 text-red-300 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-red-200">Your progress toward this goal will be lost. You can always create a new pot.</div>
+            <AlertTriangle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-red-500">Your progress toward this goal will be lost. You can always create a new pot.</div>
           </div>
         )}
 
         <div className="flex flex-col gap-3 mt-2">
           <button
             onClick={onDelete}
-            className="rounded-full py-4 text-sm font-semibold text-white bg-red-500/80"
+            className="rounded-full py-4 text-sm font-semibold text-white bg-red-500"
           >
             Yes, delete pot
           </button>
           <button
             onClick={onBack}
-            className="rounded-full py-4 text-sm font-semibold text-white/55"
+            className="rounded-full py-4 text-sm font-semibold text-gray-400"
           >
             Cancel
           </button>
@@ -1470,24 +1726,23 @@ function PotTransfer({
   const destRemaining = Math.max(0, destPot.targetAmount - destPot.currentAmount);
   const sourceMax = sourcePot?.currentAmount ?? 0;
   const isOverSource = amount > sourceMax;
-  const isOverDest = destRemaining > 0 && amount > destRemaining;
-  const hasError = isOverSource || isOverDest;
+  const hasError = isOverSource;
   const canConfirm = amount > 0 && sourcePot !== null && !hasError;
 
   // Phase 1 — pick source pot
   if (!sourceId) {
     return (
-      <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+      <PageShell onBack={onBack} subtitle="POTS" badge="POTS" navCurrent="money">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
           <div>
-            <div className="text-xl font-semibold mb-1">Transfer to {destPot.name}</div>
-            <div className="text-sm text-white/45">Choose which pot to move money from.</div>
+            <div className="text-xl font-semibold mb-1 text-gray-900">Transfer to {destPot.name}</div>
+            <div className="text-sm text-gray-500">Choose which pot to move money from.</div>
           </div>
           {eligible.length === 0 ? (
-            <div className="rounded-[20px] border border-white/8 bg-[#0f1117] px-5 py-8 flex flex-col items-center text-center gap-3">
+            <div className="rounded-[20px] border border-gray-100 bg-white px-5 py-8 flex flex-col items-center text-center gap-3">
               <div className="text-2xl">🪣</div>
-              <div className="text-sm font-semibold">No pots available to transfer from</div>
-              <div className="text-xs text-white/40 max-w-[220px]">Your other pots have no balance. Add money to a pot first before transferring.</div>
+              <div className="text-sm font-semibold text-gray-900">No pots available to transfer from</div>
+              <div className="text-xs text-gray-400 max-w-[220px]">Your other pots have no balance. Add money to a pot first before transferring.</div>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -1495,13 +1750,13 @@ function PotTransfer({
                 <button
                   key={p.id}
                   onClick={() => setSourceId(p.id)}
-                  className="rounded-[18px] border border-white/8 bg-[#0f1117] px-4 py-3.5 flex items-center justify-between text-left transition hover:brightness-110"
+                  className="rounded-[18px] border border-gray-100 bg-white px-4 py-3.5 flex items-center justify-between text-left transition hover:shadow-sm"
                 >
                   <div>
-                    <div className="text-sm font-semibold">{p.name}</div>
-                    <div className="text-xs text-white/40 mt-0.5">{formatAed(p.currentAmount)} available</div>
+                    <div className="text-sm font-semibold text-gray-900">{p.name}</div>
+                    <div className="text-xs text-gray-400 mt-0.5"><DhAmt v={p.currentAmount} /> available</div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-white/30 shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
                 </button>
               ))}
             </div>
@@ -1513,37 +1768,37 @@ function PotTransfer({
 
   // Phase 2 — enter amount
   return (
-    <PageShell onBack={() => { setSourceId(null); setRaw(""); }} subtitle="POTS" badge="POTS" navCurrent="money" gradient="linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)">
+    <PageShell onBack={() => { setSourceId(null); setRaw(""); }} subtitle="POTS" badge="POTS" navCurrent="money">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-5 pt-2">
         <div>
-          <div className="text-xl font-semibold mb-1">How much to transfer?</div>
-          <div className="text-sm text-white/45">From {sourcePot!.name} → {destPot.name}</div>
+          <div className="text-xl font-semibold mb-1 text-gray-900">How much to transfer?</div>
+          <div className="text-sm text-gray-500">From {sourcePot!.name} → {destPot.name}</div>
         </div>
 
         {/* Source / dest balance info */}
         <div className="flex flex-col gap-2">
-          <div className="rounded-[18px] border border-white/8 px-4 py-3 flex items-center justify-between">
-            <div className="text-sm text-white/55">Available in {sourcePot!.name}</div>
-            <div className="text-sm font-semibold">{formatAed(sourceMax)}</div>
+          <div className="rounded-[18px] border border-gray-100 bg-white px-4 py-3 flex items-center justify-between">
+            <div className="text-sm text-gray-500">Available in {sourcePot!.name}</div>
+            <div className="text-sm font-semibold text-gray-900"><DhAmt v={sourceMax} /></div>
           </div>
-          <div className="rounded-[18px] border border-white/8 px-4 py-3 flex items-center justify-between">
-            <div className="text-sm text-white/55">Remaining goal in {destPot.name}</div>
-            <div className="text-sm font-semibold">{formatAed(destRemaining)}</div>
+          <div className="rounded-[18px] border border-gray-100 bg-white px-4 py-3 flex items-center justify-between">
+            <div className="text-sm text-gray-500">Remaining goal in {destPot.name}</div>
+            <div className="text-sm font-semibold text-gray-900"><DhAmt v={destRemaining} /></div>
           </div>
         </div>
 
         {/* Amount input */}
         <div
-          className="rounded-[24px] bg-[#0f1117] border px-5 py-6 flex flex-col items-center gap-2 transition"
-          style={{ borderColor: hasError ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.08)" }}
+          className="rounded-[24px] bg-white border px-5 py-6 flex flex-col items-center gap-2 transition"
+          style={{ borderColor: hasError ? "rgba(239,68,68,0.4)" : "rgba(17,24,39,0.1)" }}
         >
-          <div className="text-xs text-white/45 mb-1">Amount</div>
+          <div className="text-xs text-gray-500 mb-1">Amount</div>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-semibold text-white/40">AED</span>
+            <DirhemSign className="h-8 w-auto text-gray-400 shrink-0" />
             <input
               type="number"
               inputMode="decimal"
-              className="bg-transparent text-4xl font-semibold text-white outline-none w-[160px] text-center"
+              className="bg-transparent text-4xl font-semibold text-gray-900 outline-none w-[160px] text-center"
               placeholder="0"
               value={raw}
               onChange={(e) => { if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setRaw(e.target.value); }}
@@ -1553,16 +1808,13 @@ function PotTransfer({
           {isOverSource && (
             <div className="text-xs text-red-400 mt-1">Exceeds available balance in {sourcePot!.name}</div>
           )}
-          {!isOverSource && isOverDest && (
-            <div className="text-xs text-red-400 mt-1">Exceeds remaining goal in {destPot.name} ({formatAed(destRemaining)} needed)</div>
-          )}
         </div>
 
         <button
           onClick={() => canConfirm && onConfirm(amount, sourceId)}
           disabled={!canConfirm}
           className="rounded-full py-4 text-sm font-semibold transition"
-          style={{ background: canConfirm ? POT : "rgba(255,255,255,0.1)", color: canConfirm ? "#000" : "rgba(255,255,255,0.3)" }}
+          style={{ background: canConfirm ? POT : "rgba(17,24,39,0.08)", color: canConfirm ? "#fff" : "rgba(17,24,39,0.3)" }}
         >
           Confirm transfer
         </button>
@@ -1581,7 +1833,7 @@ function PotTransferSuccess({
   onDone: () => void;
 }) {
   return (
-    <div className={phone} style={{ background: "linear-gradient(180deg,#000 0%,#0d0820 22%,#000 70%)" }}>
+    <div className={phone} style={{ background: "#f5f5f5" }}>
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-6">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -1594,20 +1846,20 @@ function PotTransferSuccess({
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="w-full">
-          <div className="text-2xl font-bold mb-1">Transfer done!</div>
-          <div className="text-sm text-white/45 mb-6">
-            <span style={{ color: POT }} className="font-semibold">{formatAed(amount)}</span> moved from {sourcePot.name} to {destPot.name}
+          <div className="text-2xl font-bold mb-1 text-gray-900">Transfer done!</div>
+          <div className="text-sm text-gray-500 mb-6">
+            <span style={{ color: POT }} className="font-semibold"><DhAmt v={amount} /></span> moved from {sourcePot.name} to {destPot.name}
           </div>
 
-          <div className="rounded-[24px] bg-[#0f1117] divide-y divide-white/8 text-left">
+          <div className="rounded-[24px] bg-white border border-gray-100 divide-y divide-gray-100 text-left">
             {[
-              { label: "From", value: sourcePot.name },
-              { label: "To",   value: destPot.name },
-              { label: "Amount", value: formatAed(amount) },
+              { label: "From",   value: sourcePot.name },
+              { label: "To",     value: destPot.name },
+              { label: "Amount", value: <DhAmt v={amount} /> },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between px-5 py-3.5">
-                <span className="text-sm text-white/50">{label}</span>
-                <span className="text-sm font-semibold">{value}</span>
+                <span className="text-sm text-gray-500">{label}</span>
+                <span className="text-sm font-semibold text-gray-900">{value}</span>
               </div>
             ))}
           </div>
@@ -1618,7 +1870,7 @@ function PotTransferSuccess({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           onClick={onDone}
-          className="rounded-full px-8 py-4 text-sm font-semibold text-black w-full"
+          className="rounded-full px-8 py-4 text-sm font-semibold text-white w-full"
           style={{ background: POT }}
         >
           Done
@@ -1638,6 +1890,7 @@ export default function PotsPrototype() {
   // Create flow state
   const [draftName, setDraftName] = useState("");
   const [draftTarget, setDraftTarget] = useState(0);
+  const [draftTargetDate, setDraftTargetDate] = useState<string | undefined>(undefined);
   const [lastDeposit, setLastDeposit] = useState(0);
 
   // Add money flow state
@@ -1657,15 +1910,20 @@ export default function PotsPrototype() {
   const spendable = walletTotal - potsTotal;
   const selectedPot = pots.find((p) => p.id === selectedPotId) ?? null;
 
-  function navigate(s: string) { setScreen(s === "money" ? "money-hub" : s); }
+  function navigate(s: string) {
+    if (s === "money") return setScreen("money-hub");
+    if (s === "all") return setScreen("all-services");
+    setScreen(s);
+  }
 
   function handleCreateStep1(name: string) {
     setDraftName(name);
     setScreen("create-pot-2");
   }
 
-  function handleCreateStep2(target: number) {
+  function handleCreateStep2(target: number, targetDate?: string) {
     setDraftTarget(target);
+    setDraftTargetDate(targetDate);
     setScreen("create-pot-3");
   }
 
@@ -1676,6 +1934,7 @@ export default function PotsPrototype() {
       targetAmount: draftTarget,
       currentAmount: deposit,
       createdAt: new Date().toISOString(),
+      ...(draftTargetDate ? { targetDate: draftTargetDate } : {}),
     };
     setPots((prev) => [...prev, newPot]);
     setLastDeposit(deposit);
@@ -1734,11 +1993,14 @@ export default function PotsPrototype() {
       {screen === "money-hub" && (
         <MoneyHub key="money-hub" {...sharedProps} onNavigate={navigate} />
       )}
+      {screen === "all-services" && (
+        <AllServices key="all-services" onNavigate={navigate} />
+      )}
       {screen === "pots-hub" && pots.length === 0 && (
-        <PotsOnboarding key="pots-onboarding" onBack={() => navigate("money")} onStart={() => setScreen("create-pot-1")} />
+        <PotsOnboarding key="pots-onboarding" onBack={() => setScreen("all-services")} onStart={() => setScreen("create-pot-1")} />
       )}
       {screen === "pots-hub" && pots.length > 0 && (
-        <PotsHub key="pots-hub" pots={pots} walletTotal={walletTotal} spendable={spendable} onNavigate={navigate} onSelectPot={(id) => { setSelectedPotId(id); setScreen("pot-detail"); }} />
+        <PotsHub key="pots-hub" pots={pots} walletTotal={walletTotal} spendable={spendable} onNavigate={navigate} onSelectPot={(id) => { setSelectedPotId(id); setScreen("pot-detail"); }} onWithdrawPot={(id) => { setSelectedPotId(id); setScreen("pot-withdraw"); }} onNewPot={() => setScreen("create-pot-1")} />
       )}
       {screen === "create-pot-1" && (
         <CreatePot1 key="create-1" onBack={() => setScreen("pots-hub")} onNext={handleCreateStep1} />
